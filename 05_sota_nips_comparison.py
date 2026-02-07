@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 
-from arrowspace import ArrowSpaceBuilder
+from arrowspace import ArrowSpaceBuilder, load_arrowspace
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -164,11 +164,19 @@ def evaluate_classification(args):
     }
     print(f"   Graph params: {graph_params}")
     
-    import time
-    start = time.time()
-    aspace, gl = ArrowSpaceBuilder().build_full(graph_params, X_train)
-    build_time = time.time() - start
-    print(f"   Build time: {build_time:.2f}s")
+    # B. Re-Build/Initialize ArrowSpace for search
+    graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
+
+    # Load from storage
+    aspace, gl = load_arrowspace(
+        storage_path="storage/",
+        dataset_name="dorothea_highdim",
+        graph_params=graph_params,
+        energy=False,
+    )
+
+    print(f"Loaded ArrowSpace: {aspace.nitems} items × {aspace.nfeatures} features")
+    print(f"Loaded GraphLaplacian: {gl.nnodes} nodes")
     
     # D. Load Test Data
     print("\n[4] Loading test data...")

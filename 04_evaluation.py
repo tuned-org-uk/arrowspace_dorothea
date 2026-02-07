@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import spearmanr, kendalltau
 from sklearn.metrics import ndcg_score
-from arrowspace import ArrowSpaceBuilder
+from arrowspace import ArrowSpaceBuilder, load_arrowspace
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -80,10 +80,11 @@ def main(args):
     graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
 
     # Load from storage
-    aspace, gl = pyarrowspace.load_arrowspace(
+    aspace, gl = load_arrowspace(
         storage_path="storage/",
         dataset_name="dorothea_highdim",
-        graph_params=graph_params
+        graph_params=graph_params,
+        energy=False,
     )
 
     print(f"Loaded ArrowSpace: {aspace.nitems} items × {aspace.nfeatures} features")
