@@ -10,6 +10,9 @@ from pathlib import Path
 import numpy as np
 from scipy.spatial.distance import pdist
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 def estimate_graph_params(X: np.ndarray):
     """
     Analyzes high-dim geometry to estimate wiring parameters.

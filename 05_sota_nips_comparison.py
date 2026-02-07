@@ -17,6 +17,9 @@ from collections import Counter
 
 from arrowspace import ArrowSpaceBuilder
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 # ============================================================================
 # 1. DATA LOADING (Dorothea Benchmark Format)
 # ============================================================================

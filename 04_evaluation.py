@@ -17,6 +17,9 @@ from scipy.stats import spearmanr, kendalltau
 from sklearn.metrics import ndcg_score
 from arrowspace import ArrowSpaceBuilder
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 # 1. Seeded Densification (Matches Build Pipeline)
 def densify_seeded(X_bin: np.ndarray, noise_level: float, seed: int) -> np.ndarray:
     """Injects deterministic noise and L2-normalizes to match build geometry.""" # [file:48]
@@ -75,7 +78,16 @@ def main(args):
 
     # B. Re-Build/Initialize ArrowSpace for search
     graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
-    aspace, gl = ArrowSpaceBuilder().build_full(graph_params, X_index)
+
+    # Load from storage
+    aspace, gl = pyarrowspace.load_arrowspace(
+        storage_path="storage/",
+        dataset_name="dorothea_highdim",
+        graph_params=graph_params
+    )
+
+    print(f"Loaded ArrowSpace: {aspace.nitems} items × {aspace.nfeatures} features")
+    print(f"Loaded GraphLaplacian: {gl.nnodes} nodes")
 
     # C. Load & Densify Test Queries
     X_test_raw = read_sparse_binary(Path(args.test_data), X_index.shape[1])

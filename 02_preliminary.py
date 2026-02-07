@@ -11,6 +11,9 @@ import seaborn as sns
 from pathlib import Path
 from typing import Dict, Any
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 def load_metadata(json_path: Path) -> Dict[str, Any]:
     with open(json_path, 'r') as f:
         return json.load(f)

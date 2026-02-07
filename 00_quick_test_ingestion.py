@@ -17,6 +17,9 @@ import numpy as np
 import scipy.sparse as sp
 from arrowspace import ArrowSpaceBuilder, set_debug
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 def read_sparse_binary_indices(path: Path, n_features: int) -> sp.csr_matrix:
     """Read Dorothea 1-based indices into a CSR matrix."""
     indptr = [0]

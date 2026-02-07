@@ -14,6 +14,9 @@ from pathlib import Path
 from sklearn.random_projection import GaussianRandomProjection
 from sklearn.preprocessing import normalize
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 
 def load_and_transform_highdim(
     storage_dir: Path,
