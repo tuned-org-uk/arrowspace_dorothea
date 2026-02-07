@@ -1,2 +1,4 @@
 scipy
 arrowspace
+pandas[pyarrow]
+scikit-learn

@@ -1,15 +1,16 @@
 use arrowspace::builder::ArrowSpaceBuilder;
 use ndarray::{Array2, Axis};
 use ndarray_npy::read_npy;
-use serde::Deserialize; // FIX: Import for local struct
+use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::time::Instant;
 
-// Create a local struct to handle JSON loading since GraphParams
-// in 0.24.6 does not implement DeserializeOwned [file:3]
-#[derive(Deserialize)]
+// Logging crates
+use log::{info, warn, debug, trace};
+
+#[derive(Deserialize, Debug)]
 struct EstimatedParams {
     eps: f64,
     k: usize,
@@ -19,43 +20,60 @@ struct EstimatedParams {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Load the dense high-dim matrix
-    let x: Array2<f64> = read_npy("./../storage/dorothea_highdim_full100k.npy")?;
+    // 1. Initialize Logging Harness
+    // Set RUST_LOG=info or RUST_LOG=debug to see ArrowSpace's internal traces [file:3]
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    // 2. Load the JSON exported from Python
-    let file = File::open("./../storage/estimated_graph_params.json")?;
+    info!("Starting Dorothea High-Dimensional Build Pipeline");
+
+    // 2. Load the dense high-dim matrix
+    let npy_path = "./../storage/dorothea_highdim_full100k.npy";
+    debug!("Reading NPY from: {}", npy_path);
+    let x: Array2<f64> = read_npy(npy_path)?;
+    info!("Matrix loaded: {} items x {} features", x.nrows(), x.ncols());
+
+    // 3. Load the JSON exported from Python
+    let json_path = "./../storage/estimated_graph_params.json";
+    let file = File::open(json_path)?;
     let reader = BufReader::new(file);
     let params: EstimatedParams = serde_json::from_reader(reader)?;
+    info!("Loaded spectral parameters: {:?}", params);
 
-    // 3. Convert Array2 to Vec<Vec<f64>> efficiently
-    // To minimize memory spikes, we consume the rows into the nested vector format
-    println!("Preparing rows for ArrowSpace core...");
+    // 4. Convert Array2 to Vec<Vec<f64>>
+    trace!("Commencing row conversion Axis(0) -> Vec<Vec<f64>>");
     let rows: Vec<Vec<f64>> = x.axis_iter(Axis(0)).map(|row| row.to_vec()).collect();
 
-    // Explicitly drop the original ndarray to free memory before build starts
+    // Freeing large memory block before building the graph
+    let memory_freed = (x.len() * 8) / (1024 * 1024);
     drop(x);
+    debug!("Original ndarray dropped (approx {} MB freed)", memory_freed);
 
-    println!(
-        "Loaded params: eps={}, k={}, sigma={:?}",
-        params.eps, params.k, params.sigma
-    );
-    println!("Wiring ArrowSpace graph (Max-Stress Build)...");
-
+    // 5. Build ArrowSpace
+    info!("Wiring Laplacian Graph (Max-Stress Mode)...");
     let start = Instant::now();
 
-    // 3. Build ArrowSpace
     let (aspace, gl) = ArrowSpaceBuilder::new()
         .with_lambda_graph(params.eps, params.k, params.topk, params.p, params.sigma)
         .with_inline_sampling(None)
-        .with_dims_reduction(true, Some(params.eps))
+        .with_dims_reduction(true, Some(params.eps)) // Internal JL harness [file:3]
         .with_persistence(
             PathBuf::from("./../storage"),
             "dorothea_highdim".to_string(),
         )
         .build(rows);
 
-    println!("Build complete in {:?}", start.elapsed());
-    println!("Graph Nodes: {}, Shape: {:?}", gl.nnodes, gl.shape());
+    let duration = start.elapsed();
+    info!("ArrowSpace Build Success in {:.2?}", duration);
+
+    // 6. Validation Output
+    info!("Final Graph Stats:");
+    info!("  - Nodes:     {}", gl.nnodes);
+    info!("  - Laplacian: {:?}", gl.shape());
+    info!("  - Items:     {}", aspace.nitems);
+
+    if aspace.nitems == 0 {
+        warn!("Build completed but ArrowSpace contains 0 items. Check row conversion.");
+    }
 
     Ok(())
 }

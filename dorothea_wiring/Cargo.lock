@@ -622,6 +622,8 @@ name = "dorothea_wiring"
 version = "0.1.0"
 dependencies = [
  "arrowspace",
+ "env_logger",
+ "log",
  "ndarray 0.15.6",
  "ndarray-npy",
  "rand 0.8.5",
