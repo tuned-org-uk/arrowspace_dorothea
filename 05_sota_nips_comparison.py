@@ -15,8 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 
-from arrowspace import ArrowSpaceBuilder, setdebug
-
+from arrowspace import ArrowSpaceBuilder
 
 # ============================================================================
 # 1. DATA LOADING (Dorothea Benchmark Format)
@@ -132,7 +131,6 @@ def evaluate_classification(args):
     """
     Main evaluation: k-NN classification with multiple tau and k settings.
     """
-    setdebug(args.debug)
     data_dir = Path(args.data_dir)
     storage = Path(args.storage)
     
@@ -165,7 +163,7 @@ def evaluate_classification(args):
     
     import time
     start = time.time()
-    aspace, gl = ArrowSpaceBuilder.buildfull(graph_params, X_train)
+    aspace, gl = ArrowSpaceBuilder().build_full(graph_params, X_train)
     build_time = time.time() - start
     print(f"   Build time: {build_time:.2f}s")
     

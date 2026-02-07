@@ -15,8 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import spearmanr, kendalltau
 from sklearn.metrics import ndcg_score
-
-from arrowspace import ArrowSpaceBuilder, setdebug
+from arrowspace import ArrowSpaceBuilder
 
 # 1. Seeded Densification (Matches Build Pipeline)
 def densify_seeded(X_bin: np.ndarray, noise_level: float, seed: int) -> np.ndarray:
@@ -68,7 +67,6 @@ def compute_metrics(results_a, results_b, k=10):
     return {"spearman": float(s), "kendall": float(k_val), "ndcg": float(ndcg)}
 
 def main(args):
-    setdebug(args.debug)
     storage = Path(args.storage)
     
     # A. Load Build Data
@@ -77,7 +75,7 @@ def main(args):
 
     # B. Re-Build/Initialize ArrowSpace for search
     graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
-    aspace, gl = ArrowSpaceBuilder.buildfull(graph_params, X_index)
+    aspace, gl = ArrowSpaceBuilder().build_full(graph_params, X_index)
 
     # C. Load & Densify Test Queries
     X_test_raw = read_sparse_binary(Path(args.test_data), X_index.shape[1])

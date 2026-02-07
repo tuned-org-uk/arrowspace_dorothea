@@ -159,7 +159,7 @@ def analyze_hub_lambda_correlation(aspace, hubness_scores, lambda_values):
 
 ```python
 X_features = X_index.T  # Now 100k features × 1150 samples
-aspace_feat, gl_feat = ArrowSpaceBuilder.buildfull(graph_params, X_features)
+aspace_feat, gl_feat = ArrowSpaceBuilder().build_full(graph_params, X_features)
 # Analyze λ[0:50000] vs λ[50000:100000]
 ```
 

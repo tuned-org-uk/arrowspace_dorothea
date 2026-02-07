@@ -75,7 +75,7 @@ Using these estimated parameters, your final build step should look like this:
 
 ```python
 # Pass the estimated dict directly to the builder
-aspace, gl = ArrowSpaceBuilder.buildfull(best_params, X_dense)
+aspace, gl = ArrowSpaceBuilder().build_full(best_params, X_dense)
 ```
 
 This configuration will maximize the **Spectral Gap**, ensuring that your search results are not just "the nearest items" but the "spectrally significant" neighbors.[^3][^1]

@@ -1,6 +1,6 @@
 # Graph Wiring for Dorothea dataset
 
-What is Graph Wiring? Any vector space is also a graph and `arrowspace` builds and leverage this graph -> [blog post](https://www.tuned.org.uk/posts/010_game_changer_unifying_vectors_and_features_graphs)
+What is **Graph Wiring**? Any vector space is also a graph and `arrowspace` builds and leverage this graph -> [blog post](https://www.tuned.org.uk/posts/010_game_changer_unifying_vectors_and_features_graphs)
 
 ## Usage
 

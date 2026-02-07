@@ -13,7 +13,7 @@ Sample Vector (First 10 dims):
  -1.e-05]
 
 Saved high-dimensional data to storage/dorothea_highdim_full100k.npy
-Use ArrowSpaceBuilder.buildfull() with this file to verify throughput.
+Use ArrowSpaceBuilder().build_full() with this file to verify throughput.
 
 
 /app/arrowspace_dorothea$ python 02_preliminary.py

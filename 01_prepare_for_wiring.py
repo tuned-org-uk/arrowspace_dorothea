@@ -94,7 +94,7 @@ def load_and_transform_highdim(
 
     print(f"\nSaved high-dimensional data to {out_file}")
     print(f"Saved preprocessing metadata to {meta_out}")
-    print("Use ArrowSpaceBuilder.buildfull() with this file to verify throughput.")
+    print("Use ArrowSpaceBuilder().build_full() with this file to verify throughput.")
 
 
 if __name__ == "__main__":
