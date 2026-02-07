@@ -62,11 +62,11 @@ def main():
     ap.add_argument("--out-dir", default="dorothea_out")
     
     # ArrowSpace graph params
-    ap.add_argument("--eps", type=float, default=1.1)
-    ap.add_argument("--k", type=int, default=25)
-    ap.add_argument("--topk", type=int, default=15)
+    ap.add_argument("--eps", type=float, default=0.970636)
+    ap.add_argument("--k", type=int, default=21)
+    ap.add_argument("--topk", type=int, default=10)
     ap.add_argument("--p", type=float, default=2.0)
-    ap.add_argument("--sigma", type=float, default=-1.0)
+    ap.add_argument("--sigma", type=float, default=0.1)
     ap.add_argument("--tau", type=float, default=0.7, help="Spectral vs Semantic balance")
     ap.add_argument("--debug", action="store_true")
     args = ap.parse_args()

@@ -1,0 +1,4 @@
+data/DOROTHEA
+data/*.pdf
+data/*.labels
+storage/
