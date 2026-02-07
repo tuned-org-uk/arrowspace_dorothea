@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""
+Ingest Dorothea (UCI / NIPS 2003) sparse-binary dataset and build an ArrowSpace 
+Laplacian graph using the internal dimensionality reduction harness.
+
+Builds the space on Train + Valid and executes search tests on the Test set.
+
+python ingestion.py --data-dir data/DOROTHEA/
+"""
+
+import argparse
+import json
+from pathlib import Path
+import time
+
+import numpy as np
+import scipy.sparse as sp
+from arrowspace import ArrowSpaceBuilder, set_debug
+
+def read_sparse_binary_indices(path: Path, n_features: int) -> sp.csr_matrix:
+    """Read Dorothea 1-based indices into a CSR matrix."""
+    indptr = [0]
+    indices = []
+    data = []
+
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                indptr.append(indptr[-1])
+                continue
+            toks = line.split()
+            row_idx = [int(t) - 1 for t in toks if t]
+            row_idx = [j for j in row_idx if 0 <= j < n_features]
+            row_idx.sort()
+
+            indices.extend(row_idx)
+            data.extend([1.0] * len(row_idx))
+            indptr.append(len(indices))
+
+    return sp.csr_matrix(
+        (np.asarray(data, dtype=np.float64),
+         np.asarray(indices, dtype=np.int32),
+         np.asarray(indptr, dtype=np.int64)),
+        shape=(len(indptr) - 1, n_features)
+    )
+
+def gl_to_scipy_csr(gl):
+    """Convert ArrowSpace GraphLaplacian to SciPy CSR."""
+    data_f32, indices_u64, indptr_u64, shape = gl.tocsr()
+    return sp.csr_matrix(
+        (np.asarray(data_f32, dtype=np.float64),
+         np.asarray(indices_u64, dtype=np.int32),
+         np.asarray(indptr_u64, dtype=np.int64)),
+        shape=tuple(shape)
+    )
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", required=True, help="Path to Dorothea files")
+    ap.add_argument("--n-features", type=int, default=100000)
+    ap.add_argument("--out-dir", default="dorothea_out")
+    
+    # ArrowSpace graph params
+    ap.add_argument("--eps", type=float, default=1.1)
+    ap.add_argument("--k", type=int, default=25)
+    ap.add_argument("--topk", type=int, default=15)
+    ap.add_argument("--p", type=float, default=2.0)
+    ap.add_argument("--sigma", type=float, default=-1.0)
+    ap.add_argument("--tau", type=float, default=0.7, help="Spectral vs Semantic balance")
+    ap.add_argument("--debug", action="store_true")
+    args = ap.parse_args()
+
+    data_dir = Path(args.data_dir)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=False)
+    set_debug(args.debug)
+
+    # 1) Load Indexing Data: Train + Valid [file:4]
+    print("Ingesting Train + Valid for building space...")
+    X_train = read_sparse_binary_indices(data_dir / "dorothea_train.data", args.n_features)
+    X_valid = read_sparse_binary_indices(data_dir / "dorothea_valid.data", args.n_features)
+    X_build = sp.vstack([X_train, X_valid]).toarray().astype(np.float64)
+
+    # 2) Build ArrowSpace (Internal JL harness handles 100k -> 1024 dims) [file:3]
+    graphparams = {
+        "eps": args.eps,
+        "k": args.k,
+        "topk": args.topk,
+        "p": args.p,
+    }
+    if args.sigma >= 0.0:
+        graphparams["sigma"] = args.sigma
+
+    print(f"Building ArrowSpace on {X_build.shape} matrix...")
+    start = time.perf_counter()
+    builder = (ArrowSpaceBuilder()
+            .with_dims_reduction(enabled=True, eps=args.eps / 2.0)
+            .with_sampling("simple", 1.0))
+    aspace, gl = builder.build_and_store(graphparams, X_build)
+    print(f"Build time: {time.perf_counter() - start:.2f}s")
+
+    # 3) Load Search Data: Test [file:4]
+    print("Loading Test set for search evaluation...")
+    X_test = read_sparse_binary_indices(data_dir / "dorothea_test.data", args.n_features).toarray().astype(np.float64)
+
+    # 4) Execute Search Tests
+    print(f"Executing search for {X_test.shape[0]} test queries...")
+    all_hits = []
+    for i in range(min(50, X_test.shape[0])): # Sample first 50 queries
+        query = X_test[i]
+        # aspace.search projects the query using the internal seed [file:3]
+        hits = aspace.search(query, gl, tau=args.tau)
+        all_hits.append({"query_idx": i, "hits": hits})
+
+    # 5) Export and Persistence
+    print("Exporting results and Laplacian...")
+    L = gl_to_scipy_csr(gl)
+    sp.save_npz(out_dir / "laplacian_csr.npz", L)
+    
+    with (out_dir / "test_search_results.json").open("w") as f:
+        json.dump(all_hits, f, indent=2)
+
+    stats = {
+        "n_items_indexed": aspace.nitems,
+        "n_test_queries": X_test.shape[0],
+        "internal_reduced_dim": aspace.nfeatures, # Should reflect JL target [file:3]
+        "laplacian_nnz": L.nnz,
+        "graphparams": graphparams
+    }
+    with (out_dir / "stats.json").open("w") as f:
+        json.dump(stats, f, indent=2)
+
+    print(f"Done. Build complete. Reduced dimension: {aspace.nfeatures}")
+
+if __name__ == "__main__":
+    main()
