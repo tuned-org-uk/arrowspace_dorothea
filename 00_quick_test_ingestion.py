@@ -59,7 +59,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", required=True, help="Path to Dorothea files")
     ap.add_argument("--n-features", type=int, default=100000)
-    ap.add_argument("--out-dir", default="dorothea_out")
     
     # ArrowSpace graph params
     ap.add_argument("--eps", type=float, default=0.970636)
@@ -72,8 +71,6 @@ def main():
     args = ap.parse_args()
 
     data_dir = Path(args.data_dir)
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=False)
     set_debug(args.debug)
 
     # 1) Load Indexing Data: Train + Valid [file:4]
@@ -99,39 +96,3 @@ def main():
             .with_sampling("simple", 1.0))
     aspace, gl = builder.build_and_store(graphparams, X_build)
     print(f"Build time: {time.perf_counter() - start:.2f}s")
-
-    # 3) Load Search Data: Test [file:4]
-    print("Loading Test set for search evaluation...")
-    X_test = read_sparse_binary_indices(data_dir / "dorothea_test.data", args.n_features).toarray().astype(np.float64)
-
-    # 4) Execute Search Tests
-    print(f"Executing search for {X_test.shape[0]} test queries...")
-    all_hits = []
-    for i in range(min(50, X_test.shape[0])): # Sample first 50 queries
-        query = X_test[i]
-        # aspace.search projects the query using the internal seed [file:3]
-        hits = aspace.search(query, gl, tau=args.tau)
-        all_hits.append({"query_idx": i, "hits": hits})
-
-    # 5) Export and Persistence
-    print("Exporting results and Laplacian...")
-    L = gl_to_scipy_csr(gl)
-    sp.save_npz(out_dir / "laplacian_csr.npz", L)
-    
-    with (out_dir / "test_search_results.json").open("w") as f:
-        json.dump(all_hits, f, indent=2)
-
-    stats = {
-        "n_items_indexed": aspace.nitems,
-        "n_test_queries": X_test.shape[0],
-        "internal_reduced_dim": aspace.nfeatures, # Should reflect JL target [file:3]
-        "laplacian_nnz": L.nnz,
-        "graphparams": graphparams
-    }
-    with (out_dir / "stats.json").open("w") as f:
-        json.dump(stats, f, indent=2)
-
-    print(f"Done. Build complete. Reduced dimension: {aspace.nfeatures}")
-
-if __name__ == "__main__":
-    main()
