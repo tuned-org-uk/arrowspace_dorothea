@@ -80,6 +80,7 @@ def main(args):
     graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
 
     # Load from storage
+    print(f"Loading ArrowSpace from storage")
     aspace, gl = load_arrowspace(
         storage_path="storage/",
         dataset_name="dorothea_highdim",
@@ -101,8 +102,8 @@ def main(args):
 
     for i in tqdm(range(min(len(X_test), args.n_queries)), desc="Querying"):
         q = X_test[i]
-        
-        # Search calls: TauMode is automatically computed here [file:46]
+
+        # Now search using the correctly dimensioned query item
         r_cos = aspace.search(q, gl, tau=tau_configs["Cosine"])
         r_hyb = aspace.search(q, gl, tau=tau_configs["Hybrid"])
         r_tau = aspace.search(q, gl, tau=tau_configs["TauMode"])
