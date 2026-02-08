@@ -81,7 +81,7 @@ def main():
     print("Ingesting Train + Valid for building space...")
     X_train = read_sparse_binary_indices(data_dir / "dorothea_train.data", args.n_features)
     X_valid = read_sparse_binary_indices(data_dir / "dorothea_valid.data", args.n_features)
-    X_build = sp.vstack([X_train, X_valid]).toarray().astype(np.float64)
+    # X_build = sp.vstack([X_train, X_valid]).toarray().astype(np.float64)
 
     # 2) Build ArrowSpace (Internal JL harness handles 100k -> 1024 dims) [file:3]
     graphparams = {
@@ -93,12 +93,12 @@ def main():
     if args.sigma >= 0.0:
         graphparams["sigma"] = args.sigma
 
-    print(f"Building ArrowSpace on {X_build.shape} matrix...")
+    print(f"Building ArrowSpace on {X_train.shape} matrix...")
     start = time.perf_counter()
     builder = (ArrowSpaceBuilder()
             .with_dims_reduction(enabled=True, eps=args.eps / 2.0)
             .with_sampling("simple", 1.0))
-    aspace, gl = builder.build_and_store(graphparams, X_build)
+    aspace, gl = builder.build_and_store(graphparams, X_train.toarray().astype(np.float64))
     print(f"Build time: {time.perf_counter() - start:.2f}s")
 
 if __name__ == "__main__":

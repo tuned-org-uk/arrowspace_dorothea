@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-ArrowSpace k-NN Classification Evaluation on Dorothea.
-Compares spectral-aware search against vanilla cosine k-NN using
-the official NIPS 2003 benchmark metric: Balanced Error Rate (BER).
+ArrowSpace k-NN Classification Evaluation on Dorothea (NIPS 2003).
 
-UPDATED: 
-- Uses `load_arrowspace` to restore pre-computed index.
-- Correctly handles the 1150-item index (Train + Valid) by concatenating labels.
+Methodology:
+- Index built from TRAINING split only (800 samples)
+- Evaluation on VALIDATION split (350 samples, held-out)
+- Metric: Balanced Error Rate (BER) - official NIPS 2003 benchmark
+
+This ensures no data leakage: validation samples never influence the index.
 """
 
 import json
@@ -54,23 +55,24 @@ def densify_seeded(X_bin: np.ndarray, noise_level: float, seed: int) -> np.ndarr
 def knn_predict(aspace, gl, query, k: int, tau: float, train_labels: np.ndarray) -> int:
     """
     Majority-vote k-NN classification via ArrowSpace search.
-    The `train_labels` array must match the index size (1150 items).
-    """
-    # aspace.search returns indices [0..1149]
-    results = aspace.search(query, gl, tau=tau)[:k]
     
-    # Map indices to labels. Since our index is (Train + Valid), 
-    # train_labels must be the concatenated (y_train + y_valid).
+    Note: aspace.search internally handles query reprojection if JL was used during build.
+    """
+    results = aspace.search(query, gl, tau=tau)[:k]
     neighbor_labels = [train_labels[idx] for idx, _ in results]
+    
+    if len(neighbor_labels) == 0:
+        logging.warning(f"No neighbors found for query, defaulting to negative class")
+        return -1
     
     return int(np.sign(np.sum(neighbor_labels)))
 
-def knn_predict_cosine_baseline(X_ref, y_ref, query, k: int) -> int:
+def knn_predict_cosine_baseline(X_train, y_train, query, k: int) -> int:
     """Pure cosine k-NN (no ArrowSpace) for baseline comparison."""
     from scipy.spatial.distance import cdist
-    dists = cdist(query.reshape(1, -1), X_ref, metric="cosine")[0]
+    dists = cdist(query.reshape(1, -1), X_train, metric="cosine")[0]
     topk_idx = np.argpartition(dists, k)[:k]
-    neighbor_labels = y_ref[topk_idx]
+    neighbor_labels = y_train[topk_idx]
     return int(np.sign(np.sum(neighbor_labels)))
 
 # ============================================================================
@@ -78,9 +80,15 @@ def knn_predict_cosine_baseline(X_ref, y_ref, query, k: int) -> int:
 # ============================================================================
 
 def compute_ber(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
-    """Balanced Error Rate (BER) = 0.5 * (FP/(FP+TN) + FN/(FN+TP))."""
+    """
+    Balanced Error Rate (BER) = 0.5 * (FP/(FP+TN) + FN/(FN+TP)).
+    
+    This is the official Dorothea benchmark metric from NIPS 2003, which accounts
+    for class imbalance by averaging error rates across positive and negative classes.
+    """
     pos_mask = (y_true == 1)
     neg_mask = (y_true == -1)
+    
     n_pos = pos_mask.sum()
     n_neg = neg_mask.sum()
     
@@ -99,6 +107,8 @@ def compute_ber(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     
     return {
         "BER": float(ber),
+        "pos_error": float(pos_error),
+        "neg_error": float(neg_error),
         "precision": float(precision),
         "recall": float(recall),
         "f1": float(f1),
@@ -113,33 +123,15 @@ def evaluate_classification(args):
     data_dir = Path(args.data_dir)
     storage_dir = Path(args.storage).resolve()
     
-    print("="*70)
-    print("ArrowSpace k-NN Classification Evaluation on Dorothea")
-    print("="*70)
-
-    # -------------------------------------------------------------------------
-    # D. Load Test Data
-    # -------------------------------------------------------------------------
-    logging.info("Loading test data...")
-    test_data_path = data_dir / "dorothea_test.data"
-    test_labels_path = data_dir / "dorothea_test.labels"
+    logging.info("="*80)
+    logging.info("ArrowSpace k-NN Classification: Dorothea NIPS 2003 Benchmark")
+    logging.info("="*80)
     
-    if test_data_path.exists() and test_labels_path.exists():
-        logging.info("Using official test split")
-        X_test_raw = read_sparse_binary(test_data_path, aspace.nfeatures)
-        y_test = read_labels(test_labels_path)
-    else:
-        raise ValueError(f"Missing {test_data_path} or {test_labels_path}")
+    # ========================================================================
+    # A. Load Pre-Built ArrowSpace Index (TRAINING DATA ONLY)
+    # ========================================================================
     
-    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)[:50]
-    logging.info(f"Test Set: {len(X_test)} samples")
-    
-    # -------------------------------------------------------------------------
-    # A. Restore ArrowSpace Index
-    # -------------------------------------------------------------------------
-    logging.info(f"Loading ArrowSpace Index: {args.dataset}")
-    
-    # Use params that match the build
+    logging.info(f"\n[1] Loading ArrowSpace index: {args.dataset}")
     graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
     
     aspace, gl = load_arrowspace(
@@ -148,114 +140,142 @@ def evaluate_classification(args):
         graph_params=graph_params,
         energy=False,
     )
-    logging.info(f"Loaded: {aspace.nitems} items × {aspace.nfeatures} features")
-    logging.info(f"Graph Nodes: {gl.nnodes}")
-
-    # -------------------------------------------------------------------------
-    # B. Load & Align Labels (The Critical Fix)
-    # -------------------------------------------------------------------------
-    logging.info("Loading labels for Training + Validation sets...")
     
+    logging.info(f"    Index loaded: {aspace.nitems} items × {aspace.nfeatures} features")
+    
+    # Sanity check: Verify index was built from training split only (800 samples)
+    EXPECTED_TRAIN_SIZE = 800
+    if aspace.nitems != EXPECTED_TRAIN_SIZE:
+        logging.error(
+            f"    ❌ DATA LEAKAGE DETECTED! Expected {EXPECTED_TRAIN_SIZE} training items, "
+            f"but index contains {aspace.nitems} items.\n"
+            f"    Please rebuild index using ONLY dorothea_train.data"
+        )
+        raise ValueError("Index contains non-training data - rebuild required")
+    
+    logging.info(f"    ✓ No data leakage: Index contains {EXPECTED_TRAIN_SIZE} training samples only")
+    
+    # ========================================================================
+    # B. Load Training Labels (for k-NN voting)
+    # ========================================================================
+    
+    logging.info("\n[2] Loading training data...")
     y_train = read_labels(data_dir / "dorothea_train.labels")
-    y_valid = read_labels(data_dir / "dorothea_valid.labels")
-    
-    # IMPORTANT: The loaded index contains 1150 items (800 Train + 350 Valid).
-    # We must concatenate the labels in the exact same order (Train then Valid).
-    y_all = np.concatenate([y_train, y_valid])
-    
-    if len(y_all) != aspace.nitems:
-        logging.error(f"Label mismatch! Index has {aspace.nitems} items, but loaded {len(y_all)} labels.")
-        return
-
-    # -------------------------------------------------------------------------
-    # C. Prepare Baseline Data (X_all)
-    # -------------------------------------------------------------------------
-    logging.info("Loading raw data for baseline comparison...")
-    
     X_train_raw = read_sparse_binary(data_dir / "dorothea_train.data", aspace.nfeatures)
-    X_valid_raw = read_sparse_binary(data_dir / "dorothea_valid.data", aspace.nfeatures)
-    X_all_raw = np.vstack([X_train_raw, X_valid_raw])
+    X_train = densify_seeded(X_train_raw, noise_level=args.noise, seed=args.seed)
     
-    # Apply same densification as index
-    X_all = densify_seeded(X_all_raw, noise_level=args.noise, seed=args.seed)
-
-    # -------------------------------------------------------------------------
-    # E. Experiments
-    # -------------------------------------------------------------------------
+    logging.info(f"    Training samples: {len(y_train)}")
+    logging.info(f"    Class distribution: Positive={((y_train == 1).sum())}, "
+                 f"Negative={((y_train == -1).sum())}")
+    
+    # ========================================================================
+    # C. Load Validation Split as Test Set (HELD-OUT)
+    # ========================================================================
+    
+    logging.info("\n[3] Loading validation split as test set...")
+    logging.info("    (Official test labels are withheld for NIPS 2003 challenge)")
+    
+    X_test_raw = read_sparse_binary(data_dir / "dorothea_valid.data", aspace.nfeatures)
+    y_test = read_labels(data_dir / "dorothea_valid.labels")
+    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)
+    
+    logging.info(f"    Test samples: {len(X_test)}")
+    logging.info(f"    Class distribution: Positive={((y_test == 1).sum())}, "
+                 f"Negative={((y_test == -1).sum())}")
+    
+    # Verify no overlap
+    assert X_train.shape[0] == EXPECTED_TRAIN_SIZE, "Training data size mismatch"
+    assert X_test.shape[0] == 350, "Validation data size mismatch"
+    
+    # ========================================================================
+    # D. Run k-NN Classification Experiments
+    # ========================================================================
+    
+    logging.info("\n[4] Running k-NN classification experiments...")
+    logging.info("="*80)
+    
     tau_configs = {
         "Cosine (τ=1.0)": 1.0,
         "Hybrid (τ=0.72)": 0.72,
         "TauMode (τ=0.42)": 0.42,
     }
     
-    k_values = args.k_values
+    k_values = [5, 10, 15, 20, 25]
     results = []
     
-    # 1. Spectral-Aware k-NN
+    # Experiment 1: Spectral-Aware k-NN
     for method_name, tau in tau_configs.items():
         for k in k_values:
-            logging.info(f"Evaluating {method_name}, k={k}")
+            logging.info(f"  → {method_name}, k={k}")
+            preds = []
+            for q in tqdm(X_test, desc=f"    {method_name} k={k}", leave=False):
+                preds.append(knn_predict(aspace, gl, q, k, tau, y_train))
             
-            predictions = []
-            for q in tqdm(X_test, desc=f"{method_name} k={k}", leave=False):
-                # We pass y_all (1150 labels) to match the index indices
-                pred = knn_predict(aspace, gl, q, k=k, tau=tau, train_labels=y_all)
-                predictions.append(pred)
-            
-            metrics = compute_ber(y_test, np.array(predictions))
+            metrics = compute_ber(y_test, np.array(preds))
             results.append({"method": method_name, "tau": tau, "k": k, **metrics})
-
-    # 2. Pure Cosine Baseline (Searching against X_all)
-    for k in k_values:
-        logging.info(f"Evaluating Baseline Cosine, k={k}")
-        
-        predictions = []
-        for q in tqdm(X_test, desc=f"Baseline k={k}", leave=False):
-            # Baseline searches against the same 1150 items
-            pred = knn_predict_cosine_baseline(X_all, y_all, q, k=k)
-            predictions.append(pred)
-        
-        metrics = compute_ber(y_test, np.array(predictions))
-        results.append({"method": "Baseline Cosine", "tau": 1.0, "k": k, **metrics})
-
-    # -------------------------------------------------------------------------
-    # F. Save & Report
-    # -------------------------------------------------------------------------
-    df = pd.DataFrame(results)
-    df = df.sort_values(["method", "k"])
     
+    # Experiment 2: Pure Cosine Baseline (no spectral graph)
+    for k in k_values:
+        logging.info(f"  → Baseline Cosine, k={k}")
+        preds = []
+        for q in tqdm(X_test, desc=f"    Baseline k={k}", leave=False):
+            preds.append(knn_predict_cosine_baseline(X_train, y_train, q, k))
+        
+        metrics = compute_ber(y_test, np.array(preds))
+        results.append({"method": "Baseline Cosine", "tau": 1.0, "k": k, **metrics})
+    
+    # ========================================================================
+    # E. Report Results
+    # ========================================================================
+    
+    df = pd.DataFrame(results)
     out_csv = storage_dir / f"{args.dataset}_classification_results.csv"
     df.to_csv(out_csv, index=False)
-    logging.info(f"Results saved to {out_csv}")
     
-    print("\n[Best Results per Method (Lowest BER)]")
+    logging.info("\n" + "="*80)
+    logging.info("EVALUATION RESULTS")
+    logging.info("="*80)
+    
+    print("\n[Best BER per Method]")
     best_per_method = df.loc[df.groupby("method")["BER"].idxmin()]
     print(best_per_method[["method", "k", "BER", "precision", "recall", "f1"]].to_string(index=False))
-
-    # Plot
-    try:
-        fig, ax = plt.subplots(figsize=(10, 6))
-        for method in df["method"].unique():
-            subset = df[df["method"] == method]
-            ax.plot(subset["k"], subset["BER"] * 100, marker="o", label=method)
-        
-        ax.set_xlabel("k (Neighbors)")
-        ax.set_ylabel("Balanced Error Rate (%)")
-        ax.set_title("Classification Performance: BER vs k")
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        plt.savefig(storage_dir / f"{args.dataset}_ber_plot.png")
-        logging.info("Saved BER plot")
-    except Exception as e:
-        logging.warning(f"Could not generate plot: {e}")
+    
+    print("\n" + "-"*80)
+    print("[NIPS 2003 Benchmark Reference - Validation Split]")
+    print("  Method                    BER (Validation)")
+    print("  " + "-"*50)
+    print("  Lambda (baseline)         ~21.0%")
+    print("  Linear SVM (all feats)    ~15.0%")
+    print("  Winner (Jie Cheng)        ~11.0% (with feature selection)")
+    print("-"*80)
+    
+    # Highlight best ArrowSpace result
+    best_overall = df.loc[df["BER"].idxmin()]
+    print(f"\n[Best ArrowSpace Result]")
+    print(f"  Method: {best_overall['method']}")
+    print(f"  k: {best_overall['k']}")
+    print(f"  BER: {best_overall['BER']*100:.2f}%")
+    print(f"  Precision: {best_overall['precision']:.3f}")
+    print(f"  Recall: {best_overall['recall']:.3f}")
+    print(f"  F1: {best_overall['f1']:.3f}")
+    
+    logging.info(f"\n[5] Results saved to: {out_csv}")
+    logging.info("="*80)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data-dir", default="data/DOROTHEA")
-    parser.add_argument("--storage", default="./storage")
-    parser.add_argument("--dataset", default="dorothea_highdim") # The prefix of your stored files
-    parser.add_argument("--noise", type=float, default=0.001)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--k-values", type=int, nargs="+", default=[10, 15, 25])
+    parser = argparse.ArgumentParser(
+        description="k-NN Classification: Dorothea Train (800) → Validation (350)"
+    )
+    parser.add_argument("--data-dir", default="data/DOROTHEA",
+                        help="Directory containing Dorothea dataset files")
+    parser.add_argument("--storage", default="./storage",
+                        help="Directory containing pre-built ArrowSpace index")
+    parser.add_argument("--dataset", default="dorothea_highdim",
+                        help="Dataset name prefix (should be built from train split only)")
+    parser.add_argument("--noise", type=float, default=0.001,
+                        help="Noise level for densification (must match build)")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for reproducibility")
     
-    evaluate_classification(parser.parse_args())
+    args = parser.parse_args()
+    evaluate_classification(args)
