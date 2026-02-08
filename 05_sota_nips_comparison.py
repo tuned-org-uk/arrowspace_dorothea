@@ -174,11 +174,7 @@ def evaluate_classification(args):
         X_test_raw = read_sparse_binary(test_data_path, aspace.nfeatures)
         y_test = read_labels(test_labels_path)
     else:
-        # Fallback for local testing if official test labels are hidden
-        logging.warning("Official test set missing/hidden. Using Validation set for demo purposes.")
-        logging.warning("(Note: This is technically leakage since Valid is in the index!)")
-        X_test_raw = X_valid_raw
-        y_test = y_valid
+        raise ValueError(f"Missing {test_data_path} or {test_labels_path}")
     
     X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)[:50]
     logging.info(f"Test Set: {len(X_test)} samples")
