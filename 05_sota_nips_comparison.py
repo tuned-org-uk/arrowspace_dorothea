@@ -116,6 +116,23 @@ def evaluate_classification(args):
     print("="*70)
     print("ArrowSpace k-NN Classification Evaluation on Dorothea")
     print("="*70)
+
+    # -------------------------------------------------------------------------
+    # D. Load Test Data
+    # -------------------------------------------------------------------------
+    logging.info("Loading test data...")
+    test_data_path = data_dir / "dorothea_test.data"
+    test_labels_path = data_dir / "dorothea_test.labels"
+    
+    if test_data_path.exists() and test_labels_path.exists():
+        logging.info("Using official test split")
+        X_test_raw = read_sparse_binary(test_data_path, aspace.nfeatures)
+        y_test = read_labels(test_labels_path)
+    else:
+        raise ValueError(f"Missing {test_data_path} or {test_labels_path}")
+    
+    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)[:50]
+    logging.info(f"Test Set: {len(X_test)} samples")
     
     # -------------------------------------------------------------------------
     # A. Restore ArrowSpace Index
@@ -161,23 +178,6 @@ def evaluate_classification(args):
     
     # Apply same densification as index
     X_all = densify_seeded(X_all_raw, noise_level=args.noise, seed=args.seed)
-
-    # -------------------------------------------------------------------------
-    # D. Load Test Data
-    # -------------------------------------------------------------------------
-    logging.info("Loading test data...")
-    test_data_path = data_dir / "dorothea_test.data"
-    test_labels_path = data_dir / "dorothea_test.labels"
-    
-    if test_data_path.exists() and test_labels_path.exists():
-        logging.info("Using official test split")
-        X_test_raw = read_sparse_binary(test_data_path, aspace.nfeatures)
-        y_test = read_labels(test_labels_path)
-    else:
-        raise ValueError(f"Missing {test_data_path} or {test_labels_path}")
-    
-    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)[:50]
-    logging.info(f"Test Set: {len(X_test)} samples")
 
     # -------------------------------------------------------------------------
     # E. Experiments
