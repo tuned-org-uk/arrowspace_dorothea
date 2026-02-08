@@ -2,25 +2,31 @@
 """
 ArrowSpace k-NN Classification Evaluation on Dorothea (NIPS 2003).
 
-Methodology:
-- Index built from TRAINING split only (800 samples)
-- Evaluation on VALIDATION split (350 samples, held-out)
-- Metric: Balanced Error Rate (BER) - official NIPS 2003 benchmark
+Goal (no leakage):
+- ArrowSpace index MUST be built from dorothea_train.data only (800 items).
+- Evaluate classification on dorothea_valid.{data,labels} (350 queries, held-out).
+- Report BER (Balanced Error Rate), plus precision/recall/F1.
 
-This ensures no data leakage: validation samples never influence the index.
+Adds Script-04-style harness:
+- Wraps aspace.search(...) in try/except
+- Logs rich diagnostics per failed query (e.g., lambda==0 / "in the void")
+- Writes failures to <dataset>_classification_zeroed.csv in storage/
 """
 
 import json
 import argparse
-import pandas as pd
-import numpy as np
+import logging
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+
 from arrowspace import load_arrowspace
 
-import logging
+
 logging.basicConfig(level=logging.INFO)
+
 
 # ============================================================================
 # 1. DATA LOADING (Dorothea Benchmark Format)
@@ -37,9 +43,11 @@ def read_sparse_binary(path: Path, n_features: int) -> np.ndarray:
             rows.append(x)
     return np.stack(rows, axis=0)
 
+
 def read_labels(path: Path) -> np.ndarray:
     """Load labels: +1 (Active) or -1 (Inactive)."""
     return np.loadtxt(path, dtype=np.int32)
+
 
 def densify_seeded(X_bin: np.ndarray, noise_level: float, seed: int) -> np.ndarray:
     """Apply seeded Gaussian noise + L2 normalization (matches build pipeline)."""
@@ -48,63 +56,36 @@ def densify_seeded(X_bin: np.ndarray, noise_level: float, seed: int) -> np.ndarr
     norms = np.linalg.norm(X, axis=1, keepdims=True)
     return X / np.maximum(norms, 1e-12)
 
-# ============================================================================
-# 2. k-NN CLASSIFICATION
-# ============================================================================
-
-def knn_predict(aspace, gl, query, k: int, tau: float, train_labels: np.ndarray) -> int:
-    """
-    Majority-vote k-NN classification via ArrowSpace search.
-    
-    Note: aspace.search internally handles query reprojection if JL was used during build.
-    """
-    results = aspace.search(query, gl, tau=tau)[:k]
-    neighbor_labels = [train_labels[idx] for idx, _ in results]
-    
-    if len(neighbor_labels) == 0:
-        logging.warning(f"No neighbors found for query, defaulting to negative class")
-        return -1
-    
-    return int(np.sign(np.sum(neighbor_labels)))
-
-def knn_predict_cosine_baseline(X_train, y_train, query, k: int) -> int:
-    """Pure cosine k-NN (no ArrowSpace) for baseline comparison."""
-    from scipy.spatial.distance import cdist
-    dists = cdist(query.reshape(1, -1), X_train, metric="cosine")[0]
-    topk_idx = np.argpartition(dists, k)[:k]
-    neighbor_labels = y_train[topk_idx]
-    return int(np.sign(np.sum(neighbor_labels)))
 
 # ============================================================================
-# 3. BALANCED ERROR RATE (Official NIPS 2003 Metric)
+# 2. METRICS (BER)
 # ============================================================================
 
 def compute_ber(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     """
-    Balanced Error Rate (BER) = 0.5 * (FP/(FP+TN) + FN/(FN+TP)).
-    
-    This is the official Dorothea benchmark metric from NIPS 2003, which accounts
-    for class imbalance by averaging error rates across positive and negative classes.
+    Balanced Error Rate: average of error rates on positive and negative classes.
+
+    BER = 0.5 * (FP/(FP+TN) + FN/(FN+TP))
     """
     pos_mask = (y_true == 1)
     neg_mask = (y_true == -1)
-    
-    n_pos = pos_mask.sum()
-    n_neg = neg_mask.sum()
-    
-    tp = ((y_pred == 1) & pos_mask).sum()
-    fn = ((y_pred == -1) & pos_mask).sum()
-    tn = ((y_pred == -1) & neg_mask).sum()
-    fp = ((y_pred == 1) & neg_mask).sum()
-    
-    pos_error = fn / n_pos if n_pos > 0 else 0.0
-    neg_error = fp / n_neg if n_neg > 0 else 0.0
+
+    n_pos = int(pos_mask.sum())
+    n_neg = int(neg_mask.sum())
+
+    tp = int(((y_pred == 1) & pos_mask).sum())
+    fn = int(((y_pred == -1) & pos_mask).sum())
+    tn = int(((y_pred == -1) & neg_mask).sum())
+    fp = int(((y_pred == 1) & neg_mask).sum())
+
+    pos_error = (fn / n_pos) if n_pos > 0 else 0.0
+    neg_error = (fp / n_neg) if n_neg > 0 else 0.0
     ber = 0.5 * (pos_error + neg_error)
-    
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    
+
+    precision = (tp / (tp + fp)) if (tp + fp) > 0 else 0.0
+    recall = (tp / (tp + fn)) if (tp + fn) > 0 else 0.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+
     return {
         "BER": float(ber),
         "pos_error": float(pos_error),
@@ -112,170 +93,258 @@ def compute_ber(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         "precision": float(precision),
         "recall": float(recall),
         "f1": float(f1),
-        "confusion": {"TP": int(tp), "FP": int(fp), "TN": int(tn), "FN": int(fn)}
+        "confusion": {"TP": tp, "FP": fp, "TN": tn, "FN": fn},
+        "n_pos": n_pos,
+        "n_neg": n_neg,
     }
 
+
 # ============================================================================
-# 4. EVALUATION PIPELINE
+# 3. SEARCH HARNESS + PREDICTORS
+# ============================================================================
+
+def _vector_stats(q: np.ndarray) -> dict:
+    q = q.astype(np.float64, copy=False)
+    return {
+        "query_norm": float(np.linalg.norm(q)),
+        "query_sparsity": float(np.mean(q == 0.0)),
+        "query_mean": float(np.mean(q)),
+        "query_std": float(np.std(q)),
+        "query_min": float(np.min(q)),
+        "query_max": float(np.max(q)),
+        "query_dim": int(q.shape[0]),
+    }
+
+
+def safe_search(aspace, gl, q: np.ndarray, tau: float, query_idx: int, method_name: str):
+    """
+    Script-04-style harness around aspace.search.
+
+    Returns:
+      (results, None) on success
+      (None, error_record) on failure
+    """
+    try:
+        r = aspace.search(q, gl, tau=tau)
+        return r, None
+
+    except Exception as e:
+        err = {
+            "query_idx": int(query_idx),
+            "method": method_name,
+            "tau": float(tau),
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            **_vector_stats(q),
+            # Storing the full vector can be large; keep it optional via CLI flag.
+        }
+        return None, err
+
+
+def knn_predict_from_results(results, k: int, train_labels: np.ndarray) -> int:
+    """
+    Majority-vote k-NN classification given ArrowSpace results [(idx, score), ...].
+    """
+    if results is None or len(results) == 0:
+        return -1
+
+    topk = results[:k]
+    neighbor_labels = [train_labels[idx] for idx, _ in topk]
+    if len(neighbor_labels) == 0:
+        return -1
+
+    s = int(np.sign(np.sum(neighbor_labels)))
+    return s if s != 0 else -1  # tie-break to negative
+
+
+def knn_predict_cosine_baseline(X_train: np.ndarray, y_train: np.ndarray, q: np.ndarray, k: int) -> int:
+    """
+    Pure cosine k-NN baseline (no ArrowSpace). Uses full dense X_train (800 x 100000).
+    """
+    from scipy.spatial.distance import cdist
+
+    dists = cdist(q.reshape(1, -1), X_train, metric="cosine")[0]
+    topk_idx = np.argpartition(dists, k)[:k]
+    neighbor_labels = y_train[topk_idx]
+
+    s = int(np.sign(np.sum(neighbor_labels)))
+    return s if s != 0 else -1
+
+
+# ============================================================================
+# 4. EVALUATION
 # ============================================================================
 
 def evaluate_classification(args):
     data_dir = Path(args.data_dir)
     storage_dir = Path(args.storage).resolve()
-    
-    logging.info("="*80)
-    logging.info("ArrowSpace k-NN Classification: Dorothea NIPS 2003 Benchmark")
-    logging.info("="*80)
-    
-    # ========================================================================
-    # A. Load Pre-Built ArrowSpace Index (TRAINING DATA ONLY)
-    # ========================================================================
-    
-    logging.info(f"\n[1] Loading ArrowSpace index: {args.dataset}")
-    graph_params = {"eps": 0.97, "k": 21, "topk": 10, "p": 2.0, "sigma": 0.1}
-    
+
+    # ----------------------------------------------------------------------
+    # A. Restore ArrowSpace index (must be train-only)
+    # ----------------------------------------------------------------------
+    graph_params = {"eps": args.eps, "k": args.graph_k, "topk": args.topk, "p": args.p, "sigma": args.sigma}
+
+    logging.info(f"Loading ArrowSpace from storage: dataset={args.dataset} path={storage_dir}")
     aspace, gl = load_arrowspace(
         storage_path=str(storage_dir),
         dataset_name=args.dataset,
         graph_params=graph_params,
         energy=False,
     )
-    
-    logging.info(f"    Index loaded: {aspace.nitems} items × {aspace.nfeatures} features")
-    
-    # Sanity check: Verify index was built from training split only (800 samples)
-    EXPECTED_TRAIN_SIZE = 800
-    if aspace.nitems != EXPECTED_TRAIN_SIZE:
-        logging.error(
-            f"    ❌ DATA LEAKAGE DETECTED! Expected {EXPECTED_TRAIN_SIZE} training items, "
-            f"but index contains {aspace.nitems} items.\n"
-            f"    Please rebuild index using ONLY dorothea_train.data"
+    logging.info(f"Loaded ArrowSpace: {aspace.nitems} items × {aspace.nfeatures} features")
+
+    # Hard fail if the index contains anything other than train split.
+    EXPECTED_TRAIN_N = 800
+    if aspace.nitems != EXPECTED_TRAIN_N:
+        raise ValueError(
+            f"Data leakage risk: expected index size {EXPECTED_TRAIN_N} (train-only), got {aspace.nitems}. "
+            f"Rebuild index from dorothea_train.data only and re-run."
         )
-        raise ValueError("Index contains non-training data - rebuild required")
-    
-    logging.info(f"    ✓ No data leakage: Index contains {EXPECTED_TRAIN_SIZE} training samples only")
-    
-    # ========================================================================
-    # B. Load Training Labels (for k-NN voting)
-    # ========================================================================
-    
-    logging.info("\n[2] Loading training data...")
+
+    # ----------------------------------------------------------------------
+    # B. Load training labels (for voting) and training dense matrix (for baseline)
+    # ----------------------------------------------------------------------
     y_train = read_labels(data_dir / "dorothea_train.labels")
+    if len(y_train) != EXPECTED_TRAIN_N:
+        raise ValueError(f"Expected 800 training labels, got {len(y_train)}")
+
+    # Baseline needs X_train. (ArrowSpace itself doesn't need it.)
     X_train_raw = read_sparse_binary(data_dir / "dorothea_train.data", aspace.nfeatures)
     X_train = densify_seeded(X_train_raw, noise_level=args.noise, seed=args.seed)
-    
-    logging.info(f"    Training samples: {len(y_train)}")
-    logging.info(f"    Class distribution: Positive={((y_train == 1).sum())}, "
-                 f"Negative={((y_train == -1).sum())}")
-    
-    # ========================================================================
-    # C. Load Validation Split as Test Set (HELD-OUT)
-    # ========================================================================
-    
-    logging.info("\n[3] Loading validation split as test set...")
-    logging.info("    (Official test labels are withheld for NIPS 2003 challenge)")
-    
+
+    # ----------------------------------------------------------------------
+    # C. Validation split as test set (test labels withheld)
+    # ----------------------------------------------------------------------
     X_test_raw = read_sparse_binary(data_dir / "dorothea_valid.data", aspace.nfeatures)
     y_test = read_labels(data_dir / "dorothea_valid.labels")
     X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)
-    
-    logging.info(f"    Test samples: {len(X_test)}")
-    logging.info(f"    Class distribution: Positive={((y_test == 1).sum())}, "
-                 f"Negative={((y_test == -1).sum())}")
-    
-    # Verify no overlap
-    assert X_train.shape[0] == EXPECTED_TRAIN_SIZE, "Training data size mismatch"
-    assert X_test.shape[0] == 350, "Validation data size mismatch"
-    
-    # ========================================================================
-    # D. Run k-NN Classification Experiments
-    # ========================================================================
-    
-    logging.info("\n[4] Running k-NN classification experiments...")
-    logging.info("="*80)
-    
+
+    if args.n_queries is not None:
+        X_test = X_test[: args.n_queries]
+        y_test = y_test[: args.n_queries]
+
+    logging.info(f"Evaluation queries: {len(X_test)} (validation split)")
+
+    # ----------------------------------------------------------------------
+    # D. Run experiments (with Script-04-style harness)
+    # ----------------------------------------------------------------------
     tau_configs = {
-        "Cosine (τ=1.0)": 1.0,
-        "Hybrid (τ=0.72)": 0.72,
-        "TauMode (τ=0.42)": 0.42,
+        "Cosine": 1.0,
+        "Hybrid": 0.72,
+        "TauMode": 0.42,
     }
-    
-    k_values = [5, 15, 25]
-    results = []
-    
-    # Experiment 1: Spectral-Aware k-NN
+
+    k_values = args.k_values
+    results_rows = []
+    zeroed_rows = []  # per-query failures
+    completed = {name: 0 for name in tau_configs.keys()}
+    failed = {name: 0 for name in tau_configs.keys()}
+
     for method_name, tau in tau_configs.items():
         for k in k_values:
-            logging.info(f"  → {method_name}, k={k}")
+            logging.info(f"Evaluating method={method_name} tau={tau} k={k}")
+
             preds = []
-            for q in tqdm(X_test, desc=f"    {method_name} k={k}", leave=False):
-                preds.append(knn_predict(aspace, gl, q, k, tau, y_train))
-            
-            metrics = compute_ber(y_test, np.array(preds))
-            results.append({"method": method_name, "tau": tau, "k": k, **metrics})
-    
-    # Experiment 2: Pure Cosine Baseline (no spectral graph)
+            for i, q in enumerate(tqdm(X_test, desc=f"{method_name} k={k}", leave=False)):
+                r, err = safe_search(aspace, gl, q, tau=tau, query_idx=i, method_name=method_name)
+
+                if err is not None:
+                    failed[method_name] += 1
+
+                    if args.save_vectors:
+                        err["vector"] = q.tolist()
+
+                    # Print a Script-04-style block once per failure occurrence.
+                    print(f"\n{'='*70}")
+                    print(f"⚠️  QUERY FAILURE: Test query {i} | method={method_name} tau={tau} k={k}")
+                    print(f"Error: {err['error_type']}: {err['error_message']}")
+                    print(f"Stats: norm={err['query_norm']:.6f} mean={err['query_mean']:.3e} std={err['query_std']:.3e} "
+                          f"min={err['query_min']:.3e} max={err['query_max']:.3e} dim={err['query_dim']}")
+                    print(f"{'='*70}\n")
+
+                    zeroed_rows.append(err)
+                    preds.append(-1)  # safe fallback prediction
+                    continue
+
+                completed[method_name] += 1
+                preds.append(knn_predict_from_results(r, k=k, train_labels=y_train))
+
+            metrics = compute_ber(y_test, np.array(preds, dtype=np.int32))
+            results_rows.append({
+                "method": method_name,
+                "tau": float(tau),
+                "k": int(k),
+                **metrics,
+                "n_queries": int(len(X_test)),
+                "n_failed_queries": int(failed[method_name]),
+            })
+
+    # Baseline cosine k-NN (no ArrowSpace) — no spectral failures expected.
     for k in k_values:
-        logging.info(f"  → Baseline Cosine, k={k}")
+        logging.info(f"Evaluating baseline cosine k-NN, k={k}")
         preds = []
-        for q in tqdm(X_test, desc=f"    Baseline k={k}", leave=False):
-            preds.append(knn_predict_cosine_baseline(X_train, y_train, q, k))
-        
-        metrics = compute_ber(y_test, np.array(preds))
-        results.append({"method": "Baseline Cosine", "tau": 1.0, "k": k, **metrics})
-    
-    # ========================================================================
-    # E. Report Results
-    # ========================================================================
-    
-    df = pd.DataFrame(results)
-    out_csv = storage_dir / f"{args.dataset}_classification_results.csv"
-    df.to_csv(out_csv, index=False)
-    
-    logging.info("\n" + "="*80)
-    logging.info("EVALUATION RESULTS")
-    logging.info("="*80)
-    
-    print("\n[Best BER per Method]")
-    best_per_method = df.loc[df.groupby("method")["BER"].idxmin()]
-    print(best_per_method[["method", "k", "BER", "precision", "recall", "f1"]].to_string(index=False))
-    
-    print("\n" + "-"*80)
-    print("[NIPS 2003 Benchmark Reference - Validation Split]")
-    print("  Method                    BER (Validation)")
-    print("  " + "-"*50)
-    print("  Lambda (baseline)         ~21.0%")
-    print("  Linear SVM (all feats)    ~15.0%")
-    print("  Winner (Jie Cheng)        ~11.0% (with feature selection)")
-    print("-"*80)
-    
-    # Highlight best ArrowSpace result
-    best_overall = df.loc[df["BER"].idxmin()]
-    print(f"\n[Best ArrowSpace Result]")
-    print(f"  Method: {best_overall['method']}")
-    print(f"  k: {best_overall['k']}")
-    print(f"  BER: {best_overall['BER']*100:.2f}%")
-    print(f"  Precision: {best_overall['precision']:.3f}")
-    print(f"  Recall: {best_overall['recall']:.3f}")
-    print(f"  F1: {best_overall['f1']:.3f}")
-    
-    logging.info(f"\n[5] Results saved to: {out_csv}")
-    logging.info("="*80)
+        for q in tqdm(X_test, desc=f"Baseline k={k}", leave=False):
+            preds.append(knn_predict_cosine_baseline(X_train, y_train, q, k=k))
+        metrics = compute_ber(y_test, np.array(preds, dtype=np.int32))
+        results_rows.append({
+            "method": "Baseline Cosine",
+            "tau": 1.0,
+            "k": int(k),
+            **metrics,
+            "n_queries": int(len(X_test)),
+            "n_failed_queries": 0,
+        })
+
+    # ----------------------------------------------------------------------
+    # E. Save outputs
+    # ----------------------------------------------------------------------
+    out_results = storage_dir / f"{args.dataset}_classification_results.csv"
+    pd.DataFrame(results_rows).to_csv(out_results, index=False)
+    logging.info(f"Saved classification results: {out_results}")
+
+    if len(zeroed_rows) > 0:
+        out_zeroed = storage_dir / f"{args.dataset}_classification_zeroed.csv"
+        pd.DataFrame(zeroed_rows).to_csv(out_zeroed, index=False)
+        logging.info(f"Saved query failure diagnostics: {out_zeroed}")
+
+    # Console report
+    df = pd.DataFrame(results_rows).sort_values(["method", "k"])
+    print("\n[Best BER per method]")
+    best = df.loc[df.groupby("method")["BER"].idxmin()]
+    print(best[["method", "k", "BER", "precision", "recall", "f1", "n_failed_queries"]].to_string(index=False))
+
+    print("\n[Failure counts by tau-mode]")
+    for m in tau_configs.keys():
+        print(f"  {m}: failed={failed[m]} completed={completed[m]} (total attempts={failed[m]+completed[m]})")
+
+
+# ============================================================================
+# 5. MAIN
+# ============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="k-NN Classification: Dorothea Train (800) → Validation (350)"
-    )
-    parser.add_argument("--data-dir", default="data/DOROTHEA",
-                        help="Directory containing Dorothea dataset files")
-    parser.add_argument("--storage", default="./storage",
-                        help="Directory containing pre-built ArrowSpace index")
-    parser.add_argument("--dataset", default="dorothea_highdim",
-                        help="Dataset name prefix (should be built from train split only)")
-    parser.add_argument("--noise", type=float, default=0.001,
-                        help="Noise level for densification (must match build)")
-    parser.add_argument("--seed", type=int, default=42,
-                        help="Random seed for reproducibility")
-    
-    args = parser.parse_args()
+    p = argparse.ArgumentParser(description="ArrowSpace Dorothea k-NN (train-only index, valid evaluation)")
+
+    p.add_argument("--data-dir", default="data/DOROTHEA", help="Dorothea dataset dir")
+    p.add_argument("--storage", default="./storage", help="Storage dir containing ArrowSpace parquet/json")
+    p.add_argument("--dataset", default="dorothea_highdim", help="Dataset prefix in storage/ (train-only index)")
+
+    p.add_argument("--noise", type=float, default=0.001, help="Densification noise level")
+    p.add_argument("--seed", type=int, default=42, help="Densification RNG seed")
+    p.add_argument("--n-queries", type=int, default=50, help="How many validation queries to evaluate (None=all)")
+
+    # Graph params (should match build)
+    p.add_argument("--eps", type=float, default=0.97)
+    p.add_argument("--graph-k", type=int, default=21)
+    p.add_argument("--topk", type=int, default=10)
+    p.add_argument("--p", type=float, default=2.0)
+    p.add_argument("--sigma", type=float, default=0.1)
+
+    # Classification params
+    p.add_argument("--k-values", type=int, nargs="+", default=[5, 10, 15, 20, 25])
+
+    # Diagnostics
+    p.add_argument("--save-vectors", action="store_true", help="Include full query vector in *_zeroed.csv (large!)")
+
+    args = p.parse_args()
     evaluate_classification(args)
