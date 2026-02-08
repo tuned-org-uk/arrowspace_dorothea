@@ -105,13 +105,24 @@ def main(args):
 
     for i in tqdm(range(min(len(X_test), args.n_queries)), desc="Evaluating"):
         q = X_test[i]
+        test_completed = 0
+        zeroed_test = []
 
         # Use the real search API
         # If the index was reduced (JL), the search method internally reprojects 'q' 
         # using the restored seed from arrowspace_metadata.json
-        r_cos = aspace.search(q, gl, tau=tau_configs["Cosine"])
-        r_hyb = aspace.search(q, gl, tau=tau_configs["Hybrid"])
-        r_tau = aspace.search(q, gl, tau=tau_configs["TauMode"])
+        try:
+            r_cos = aspace.search(q, gl, tau=tau_configs["Cosine"])
+            r_hyb = aspace.search(q, gl, tau=tau_configs["Hybrid"])
+            r_tau = aspace.search(q, gl, tau=tau_configs["TauMode"])
+            test_completed += 1
+        except:
+            print(f"test query {i} got lambda == 0.0")
+            zeroed_test.append({
+            "query_idx": i,
+            "vector": q
+            })
+            continue
 
         # Metrics vs Cosine Baseline
         m_hyb = compute_metrics(r_hyb, r_cos)
@@ -132,6 +143,11 @@ def main(args):
     output_path = storage_dir / f"{args.dataset}_eval_results.csv"
     df.to_csv(output_path, index=False)
     logging.info(f"Results saved to {output_path}")
+    
+    # stored zeroed queries
+    output_path_zeroed = storage_dir / f"{args.dataset}_eval_zeroed.csv"
+    df_zeroed = pd.DataFrame(zeroed_test)
+    df_zeroed.to_csv(output_path_zeroed, index=False)
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
