@@ -119,8 +119,8 @@ def main(args):
         except:
             print(f"test query {i} got lambda == 0.0")
             zeroed_test.append({
-            "query_idx": i,
-            "vector": q
+                "query_idx": i,
+                **{f"dim_{j}": q[j] for j in range(len(q))}  # Expand vector into columns
             })
             continue
 
@@ -146,8 +146,12 @@ def main(args):
     
     # stored zeroed queries
     output_path_zeroed = storage_dir / f"{args.dataset}_eval_zeroed.csv"
-    df_zeroed = pd.DataFrame(zeroed_test)
-    df_zeroed.to_csv(output_path_zeroed, index=False)
+    if zeroed_test:
+        df_zeroed = pd.DataFrame(zeroed_test)
+        df_zeroed.to_csv(output_path_zeroed, index=False)
+        print(f"Saved {len(zeroed_test)} zeroed queries to {output_path_zeroed}")
+    else:
+        print("No zeroed queries detected.")
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
