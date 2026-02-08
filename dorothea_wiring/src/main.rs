@@ -55,7 +55,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (aspace, gl) = ArrowSpaceBuilder::new()
         .with_lambda_graph(params.eps, params.k, params.topk, params.p, params.sigma)
         .with_inline_sampling(None)
-        .with_dims_reduction(true, Some(params.eps)) // Internal JL harness [file:3]
+        // .with_dims_reduction(true, Some(params.eps)) // Internal JL harness
+        .with_dims_reduction(false, None)
         .with_persistence(
             PathBuf::from("./../storage"),
             "dorothea_highdim".to_string(),
