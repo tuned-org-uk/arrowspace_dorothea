@@ -74,6 +74,7 @@ def main():
     args = ap.parse_args()
 
     data_dir = Path(args.data_dir)
+    print(data_dir)
     set_debug(args.debug)
 
     # 1) Load Indexing Data: Train + Valid [file:4]
@@ -99,3 +100,6 @@ def main():
             .with_sampling("simple", 1.0))
     aspace, gl = builder.build_and_store(graphparams, X_build)
     print(f"Build time: {time.perf_counter() - start:.2f}s")
+
+if __name__ == "__main__":
+    main()
