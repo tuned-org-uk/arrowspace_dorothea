@@ -102,11 +102,11 @@ def main(args):
     # D. Evaluation Loop
     tau_configs = {"Cosine": 1.0, "Hybrid": 0.72, "TauMode": 0.42}
     results_summary = []
+    zeroed_test = []
 
     for i in tqdm(range(min(len(X_test), args.n_queries)), desc="Evaluating"):
         q = X_test[i]
         test_completed = 0
-        zeroed_test = []
 
         # Use the real search API
         # If the index was reduced (JL), the search method internally reprojects 'q' 
