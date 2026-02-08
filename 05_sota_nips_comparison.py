@@ -200,7 +200,7 @@ def evaluate_classification(args):
         "TauMode (τ=0.42)": 0.42,
     }
     
-    k_values = [5, 10, 15, 20, 25]
+    k_values = [5, 15, 25]
     results = []
     
     # Experiment 1: Spectral-Aware k-NN
