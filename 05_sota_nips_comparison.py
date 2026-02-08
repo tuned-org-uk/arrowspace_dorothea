@@ -341,7 +341,7 @@ if __name__ == "__main__":
     p.add_argument("--sigma", type=float, default=0.1)
 
     # Classification params
-    p.add_argument("--k-values", type=int, nargs="+", default=[5, 10, 15, 20, 25])
+    p.add_argument("--k-values", type=int, nargs="+", default=[5, 15, 25])
 
     # Diagnostics
     p.add_argument("--save-vectors", action="store_true", help="Include full query vector in *_zeroed.csv (large!)")
