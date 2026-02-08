@@ -116,13 +116,52 @@ def main(args):
             r_hyb = aspace.search(q, gl, tau=tau_configs["Hybrid"])
             r_tau = aspace.search(q, gl, tau=tau_configs["TauMode"])
             test_completed += 1
-        except:
-            print(f"test query {i} got lambda == 0.0")
+            
+        except Exception as e:
+            # Enhanced diagnostic reporting
+            error_type = type(e).__name__
+            error_msg = str(e)
+            
+            print(f"\n{'='*70}")
+            print(f"⚠️  QUERY FAILURE: Test query {i}")
+            print(f"{'='*70}")
+            print(f"Error Type: {error_type}")
+            print(f"Error Message: {error_msg}")
+            
+            # Compute query statistics for diagnosis
+            q_norm = np.linalg.norm(q)
+            q_sparsity = (q == 0).sum() / len(q) * 100
+            q_mean = np.mean(q)
+            q_std = np.std(q)
+            q_min = np.min(q)
+            q_max = np.max(q)
+            
+            print(f"\n📊 Query Vector Statistics:")
+            print(f"  - L2 Norm: {q_norm:.6e}")
+            print(f"  - Sparsity: {q_sparsity:.2f}%")
+            print(f"  - Mean: {q_mean:.6e}")
+            print(f"  - Std Dev: {q_std:.6e}")
+            print(f"  - Min/Max: [{q_min:.6e}, {q_max:.6e}]")
+            print(f"  - Dimension: {len(q)}")
+            print(f"{'='*70}\n")
+            
+            # Store comprehensive diagnostic data
             zeroed_test.append({
                 "query_idx": i,
-                **{f"dim_{j}": q[j] for j in range(len(q))}  # Expand vector into columns
+                "error_type": error_type,
+                "error_message": error_msg,
+                "query_norm": float(q_norm),
+                "query_sparsity": float(q_sparsity),
+                "query_mean": float(q_mean),
+                "query_std": float(q_std),
+                "query_min": float(q_min),
+                "query_max": float(q_max),
+                "query_dim": len(q),
+                "vector": q.tolist()  # Full vector for deeper analysis
             })
+            
             continue
+
 
         # Metrics vs Cosine Baseline
         m_hyb = compute_metrics(r_hyb, r_cos)

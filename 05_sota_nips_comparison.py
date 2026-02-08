@@ -180,7 +180,7 @@ def evaluate_classification(args):
         X_test_raw = X_valid_raw
         y_test = y_valid
     
-    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)
+    X_test = densify_seeded(X_test_raw, noise_level=args.noise, seed=args.seed)[:50]
     logging.info(f"Test Set: {len(X_test)} samples")
 
     # -------------------------------------------------------------------------
@@ -260,6 +260,6 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", default="dorothea_highdim") # The prefix of your stored files
     parser.add_argument("--noise", type=float, default=0.001)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--k-values", type=int, nargs="+", default=[5, 10, 15, 20, 25])
+    parser.add_argument("--k-values", type=int, nargs="+", default=[10, 15, 25])
     
     evaluate_classification(parser.parse_args())
