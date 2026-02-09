@@ -1,10 +1,10 @@
 [package]
-name = "dorothea_wiring"
+name = "wiring_sparse"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-arrowspace = { version = "0.25.11", features = ["storage"] }
+arrowspace = { version = "0.25.12", features = ["storage"] }
 ndarray = "0.15"
 ndarray-npy = "0.8"
 serde = { version = "1.0", features = ["derive"] }
