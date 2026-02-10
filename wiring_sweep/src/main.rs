@@ -1,7 +1,10 @@
 use arrowspace::builder::ArrowSpaceBuilder;
 use std::fs::File;
 use std::io::Write;
-use log::info;
+use std::io::BufReader;
+use std::path::PathBuf;
+use std::io::BufRead;
+use log::{warn, info};
 
 pub fn run_grid_search(
     dataset: Vec<Vec<f64>>, 
@@ -16,7 +19,7 @@ pub fn run_grid_search(
     
     // Create CSV file
     let mut file = File::create(output_path)?;
-    writeln!(file, "k,epsilon,radius_mult,jl_dim,actual_clusters,lambda_min,lambda_max,lambda_mean,graph_sparsity,graph_nnz")?;
+    writeln!(file, "k,epsilon,radius_mult,jl_dim,actual_clusters,lambda_min,lambda_max,lambda_mean,graph_nnz")?;
     
     let mut count = 0;
     
@@ -31,7 +34,7 @@ pub fn run_grid_search(
                 
                 let (aspace, gl) = ArrowSpaceBuilder::new()
                     .with_dims_reduction(true, Some(eps))
-                    .with_cluster_max_clusters(Some(k))
+                    .with_cluster_max_clusters(k)
                     .with_cluster_radius(1.0 * radius_mult)
                     .with_lambda_graph(1e-3, 6, 3, 2.0, None)
                     .build(dataset.clone());
@@ -41,15 +44,14 @@ pub fn run_grid_search(
                 let lambda_min = lambdas.iter().fold(f64::INFINITY, |a, &b| a.min(b));
                 let lambda_max = lambdas.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
                 let lambda_mean = lambdas.iter().sum::<f64>() / lambdas.len() as f64;
-                let sparsity = gl.sparsity();
                 let nnz = gl.nnz();
                 
                 // Write CSV row
                 writeln!(
                     file,
-                    "{},{:.3},{:.1},{},{},{:.8},{:.8},{:.8},{:.6},{}",
-                    k, eps, radius_mult, target_dim, aspace.nclusters,
-                    lambda_min, lambda_max, lambda_mean, sparsity, nnz
+                    "{},{:.3},{:.1},{},{},{:.8},{:.8},{:.8},{}",
+                    k, eps, radius_mult, target_dim, aspace.n_clusters,
+                    lambda_min, lambda_max, lambda_mean, nnz
                 )?;
                 
                 file.flush()?;
@@ -78,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let n_items = rows.len();
     info!("Loaded {} items with {} features (L2 normalized)", n_items, n_features);
     
-    run_grid_search(dataset, "./../storage/grid_search_results.csv")?;
+    run_grid_search(rows, "./../storage/grid_search_results.csv")?;
     
     Ok(())
 }
