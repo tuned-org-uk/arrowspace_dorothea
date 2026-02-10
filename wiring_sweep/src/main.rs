@@ -8,7 +8,7 @@ pub fn run_grid_search(
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     
-    let k_sweep = vec![5, 10, 20, 50, 100, 150, 200, 300];
+    let k_sweep = vec![5, 10, 25, 100, 300];
     let epsilons = vec![0.1, 0.2, 0.3, 0.5];
     let radii = vec![0.5, 0.7, 1.0, 1.5, 2.0];
     
