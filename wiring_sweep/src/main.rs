@@ -26,7 +26,7 @@ pub fn run_grid_search(
     // Lambda-graph eps: cosine distance threshold for edges
     // THIS IS THE KEY PARAMETER - controls graph sparsity
     // Higher = more edges = denser Laplacian = non-zero lambdas
-    let lambda_eps_sweep = vec![0.05, 0.10, 0.20, 0.30, 0.50];
+    let lambda_eps_sweep = vec![0.5, 0.75, 0.9, 1.0, 1.2];
     
     // Lambda k: max neighbors per node in graph
     let lambda_k = 10; // Fixed for now, can sweep later
