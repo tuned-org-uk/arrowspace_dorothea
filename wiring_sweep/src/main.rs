@@ -11,22 +11,11 @@ pub fn run_grid_search(
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     
-    // UPDATED: Reduced k sweep - focus on values that showed best performance
-    let k_sweep = vec![25, 50, 100];
-    
-    // UPDATED: Start from 0.50 - projection is fast enough and 0.25 adds unnecessary time
-    let jl_epsilons = vec![0.50, 0.60, 0.70];
-    
-    // UPDATED: Focus on radii that ensure good cluster assignment (>= 1.6)
-    // Added intermediate values for fine-tuning
-    let cluster_radii = vec![1.6, 2.0, 2.5, 3.0];
-    
-    // CRITICAL UPDATE: Extended lambda_eps range to combat extreme sparsity
-    // Previous max 1.2 gave only 4.5% density - need much higher values
-    let lambda_eps_sweep = vec![1.5, 2.0, 2.5, 3.0, 4.0, 5.0];
-    
-    // UPDATED: Increase lambda_k for denser local connectivity
-    let lambda_k_sweep = vec![20, 30, 50];
+    let k_sweep = vec![25, 50, 100];                        // 3 values
+    let jl_epsilons = vec![0.70];                           // 1 value (best)
+    let cluster_radii = vec![1.6, 2.0, 2.5];               // 3 values ← CHANGED
+    let lambda_eps_sweep = vec![1.5, 2.0, 2.5, 3.0, 4.0, 5.0]; // 6 values
+    let lambda_k_sweep = vec![20, 30, 50];                  // 3 values
     
     let total = k_sweep.len() * jl_epsilons.len() * cluster_radii.len() 
                 * lambda_eps_sweep.len() * lambda_k_sweep.len();
