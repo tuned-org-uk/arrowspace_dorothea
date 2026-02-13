@@ -1,0 +1,16 @@
+[package]
+name = "wiring_comparative"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+arrowspace = { version = "0.25.14", features = ["storage"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rand = "0.8"
+rand_distr = "0.4"
+log = "0.4.28"
+env_logger = "0.11.8"
+
+umap = { package = "umap-rs", version = "0.4.5" }
+ndarray = "0.17"  # Add this to match umap-rs 0.4.5
