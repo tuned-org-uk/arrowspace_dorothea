@@ -71,28 +71,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Building ArrowSpace indices with different configurations...");
 
     let configs = vec![
-        ("gaussian_best", 0.7, 50, 2.5, 50),
-        ("tight_clusters", 0.7, 25, 2.0, 50),
-        ("high_compression", 0.5, 50, 2.5, 50),
-        ("dense_graph", 0.7, 50, 3.0, 100),
-        ("sparse_graph", 0.7, 25, 1.6, 30),
+        // (name, lambda_eps, k, cluster_radius, lambda_k)
+        ("gaussian_best", 1.8, 50, 2.5, 50),
+        ("tight_clusters", 1.8, 25, 2.0, 50),
+        ("high_compression", 1.8, 50, 2.5, 50),
+        ("dense_graph", 1.8, 50, 3.0, 100),
+        ("sparse_graph", 1.8, 25, 1.6, 30),
     ];
 
     let mut results = Vec::new();
     let mut spectral_metrics = Vec::new();
     let mut lambda_distributions = Vec::new();
 
-    for (name, jl_eps, k, cluster_radius, lambda_k) in configs {
+    for (name, lambda_eps, k, cluster_radius, lambda_k) in configs {
         info!("\n═════════════════════════════════════════════════════════════════════");
         info!("Configuration: {}", name);
-        info!("  JL ε={}, k={}, radius={}, λ_k={}", jl_eps, k, cluster_radius, lambda_k);
+        info!("  JL ε={}, k={}, radius={}, λ_k={}", lambda_eps, k, cluster_radius, lambda_k);
         info!("═════════════════════════════════════════════════════════════════════");
 
         let start = Instant::now();
 
         let (aspace, gl) = ArrowSpaceBuilder::new()
-            .with_lambda_graph(jl_eps, k, 10, cluster_radius, Some(0.01))
-            .with_dims_reduction(true, Some(jl_eps))
+            .with_lambda_graph(lambda_eps, k, k / 2, cluster_radius, Some(0.01))
+            .with_dims_reduction(true, Some(0.7))
             .with_cluster_max_clusters(k as usize)
             .with_synthesis(arrowspace::taumode::TauMode::Median)
             .build(rows.clone());
@@ -206,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(ClassificationResult {
                 config: name.to_string(),
                 method: format!("knn_lambda_k{}", k_neighbors),
-                jl_eps,
+                lambda_eps,
                 k,
                 cluster_radius,
                 lambda_k,
@@ -253,7 +254,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(ClassificationResult {
                 config: name.to_string(),
                 method: format!("knn_cosine_k{}", k_neighbors),
-                jl_eps,
+                lambda_eps,
                 k,
                 cluster_radius,
                 lambda_k,
@@ -358,7 +359,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(ClassificationResult {
                 config: name.to_string(),
                 method: format!("umap_2d_k{}", k_neighbors),
-                jl_eps,
+                lambda_eps,
                 k,
                 cluster_radius,
                 lambda_k,
@@ -390,7 +391,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("│   α=0.0 → pure spectral (lambda proximity)");
         info!("│");
 
-        for alpha in [0.0, 0.2, 0.5, 0.8, 1.0] {
+        for alpha in [0.42, 0.62, 0.75, 0.9, 1.0] {
             let mut search_correct = 0;
             let search_start = Instant::now();
 
@@ -451,7 +452,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             results.push(ClassificationResult {
                 config: name.to_string(),
                 method: format!("search_alpha{:.1}", alpha),
-                jl_eps,
+                lambda_eps,
                 k,
                 cluster_radius,
                 lambda_k,
@@ -691,7 +692,7 @@ struct SpectralQuality {
 struct ClassificationResult {
     config: String,
     method: String,
-    jl_eps: f64,
+    lambda_eps: f64,
     k: usize,
     cluster_radius: f64,
     lambda_k: i32,
@@ -1010,11 +1011,11 @@ fn save_classification_results(
 ) -> std::io::Result<()> {
     let mut file = File::create(path)?;
 
-    writeln!(file, "config,method,jl_eps,k,cluster_radius,lambda_k,alpha,accuracy,balanced_accuracy,precision,recall,f1,build_time_s,query_time_s")?;
+    writeln!(file, "config,method,lambda_eps,k,cluster_radius,lambda_k,alpha,accuracy,balanced_accuracy,precision,recall,f1,build_time_s,query_time_s")?;
 
     for r in results {
         writeln!(file, "{},{},{},{},{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.2},{}",
-                 r.config, r.method, r.jl_eps, r.k, r.cluster_radius, r.lambda_k,
+                 r.config, r.method, r.lambda_eps, r.k, r.cluster_radius, r.lambda_k,
                  r.alpha.map(|a| format!("{:.1}", a)).unwrap_or_else(|| "NA".to_string()),
                  r.accuracy, r.balanced_accuracy, r.precision, r.recall, r.f1,
                  r.build_time_s,
