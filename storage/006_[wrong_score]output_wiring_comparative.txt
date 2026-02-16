@@ -1,0 +1,455 @@
+    Finished `release` profile [optimized] target(s) in 1m 31s
+     Running `target/release/wiring_comparative`
+[2026-02-13T13:24:27Z INFO  wiring_comparative] ═══════════════════════════════════════════════════════════════════════════
+[2026-02-13T13:24:27Z INFO  wiring_comparative]   DOROTHEA CLASSIFICATION EXPERIMENT v2.0
+[2026-02-13T13:24:27Z INFO  wiring_comparative]   Using Lambda (λ) as Feature Space for Drug Response Prediction
+[2026-02-13T13:24:27Z INFO  wiring_comparative]   WITH ADVANCED SPECTRAL QUALITY METRICS + UMAP BASELINE
+[2026-02-13T13:24:27Z INFO  wiring_comparative] ═══════════════════════════════════════════════════════════════════════════
+    
+[2026-02-13T13:24:27Z INFO  wiring_comparative] Loading sparse data from: "./../data/DOROTHEA/dorothea_train.data"
+[2026-02-13T13:24:27Z INFO  wiring_comparative] Loading labels from: "./../data/DOROTHEA/dorothea_train.labels"
+[2026-02-13T13:24:28Z INFO  wiring_comparative] Loaded 800 items with 100000 features (UNNORMALIZED)
+[2026-02-13T13:24:28Z INFO  wiring_comparative] Labels: 78 positive (9.8%), 722 negative (90.2%)
+    
+[2026-02-13T13:24:28Z INFO  wiring_comparative] Building ArrowSpace indices with different configurations...
+[2026-02-13T13:24:28Z INFO  wiring_comparative] 
+    ═════════════════════════════════════════════════════════════════════
+[2026-02-13T13:24:28Z INFO  wiring_comparative] Configuration: gaussian_best
+[2026-02-13T13:24:28Z INFO  wiring_comparative]   JL ε=0.7, k=50, radius=2.5, λ_k=50
+[2026-02-13T13:24:28Z INFO  wiring_comparative] ═════════════════════════════════════════════════════════════════════
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Initializing new ArrowSpaceBuilder
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Configuring lambda graph: eps=0.7, k=50, p=2.5, sigma=Some(0.01)
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Setting manual cluster_max_clusters: 50
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Configuring synthesis with tau mode: Median
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Setting custom clustering seed: 10766289729031500579
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] Building ArrowSpace from 800 items with 100000 features
+[2026-02-13T13:24:28Z INFO  arrowspace::builder] High-dimensional data detected (F=100000), using fast reduce-then-cluster path
+[2026-02-13T13:24:29Z INFO  arrowspace::builder] EigenMaps::start_clustering_fast: N=800 items, F=100000 features
+[2026-02-13T13:24:29Z INFO  arrowspace::builder] Applying early JL projection to accelerate clustering
+[2026-02-13T13:24:29Z INFO  arrowspace::builder] Early projection: 100000 features → 220 dimensions (ε=0.70)
+[2026-02-13T13:24:51Z INFO  arrowspace::builder] Early projection complete: 454.5x compression, 610 MB → 1 MB
+[2026-02-13T13:24:53Z INFO  arrowspace::sampling] Simple random sampler with keep rate 100.0%
+[2026-02-13T13:24:53Z INFO  arrowspace::builder] Computing optimal clustering parameters
+[2026-02-13T13:24:53Z INFO  arrowspace::builder] Using manual override (no intrinsic dimensions): K=Some(50), radius=1.0000
+[2026-02-13T13:24:53Z INFO  arrowspace::builder] Running incremental clustering: max_clusters=50, radius=1.000000
+[2026-02-13T13:24:53Z INFO  arrowspace::clustering] Starting incremental clustering with inline sampling
+[2026-02-13T13:24:53Z INFO  arrowspace::builder] Clustering complete: 50 centroids, 50 items assigned
+[2026-02-13T13:24:53Z INFO  arrowspace::eigenmaps] EigenMaps::eigenmaps: Building Laplacian from 50 centroids × 220 features
+[2026-02-13T13:24:53Z INFO  arrowspace::graph] Building Laplacian matrix for K cluster: 50 clusters
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Building Laplacian matrix for 50 items with 220 features
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Building CosinePair data structure
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Computing degrees for inline sparsification
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Computing k-NN with CosinePair: k=11
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Converting adjacency to sparse Laplacian matrix (DashMap batched)
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Sparse Laplacian construction time: 143.904µs
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Total Laplacian construction time: 57.006688ms
+[2026-02-13T13:24:53Z INFO  arrowspace::laplacian] Successfully built sparse Laplacian matrix (220x220) with 304 non-zeros
+[2026-02-13T13:24:53Z INFO  arrowspace::graph] Laplacian matrix built: 220×220 with 800 nodes, 304 non-zeros
+[2026-02-13T13:24:53Z INFO  arrowspace::eigenmaps] Laplacian construction complete: 220×220 matrix, 304 non-zeros, 99.37% sparse
+[2026-02-13T13:24:53Z INFO  arrowspace::builder] Computing taumode lambdas with synthesis: Median
+[2026-02-13T13:24:53Z INFO  arrowspace::eigenmaps] EigenMaps::compute_taumode: Computing λ values for 800 items using Median
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║          Parallel TauMode Lambda Computation                ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║ Configuration:                                              ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Items:           800                                      ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Features:        100000                                   ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Threads:         6                                        ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   TauMode:         Median                                   ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Graph Source:    Laplacian Matrix                         ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Graph Shape:     220×220                                  ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Graph NNZ:       304                                      ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ║   Graph Sparsity:  0.993719                                 ║
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T13:24:53Z INFO  arrowspace::taumode] Starting parallel lambda computation...
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║          Computation Statistics                             ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Sequential Items: 0                                       ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Parallel Items:   0                                       ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Compute Time:     23.567s                                 ║
+[2026-02-13T13:25:17Z INFO  arrowspace::core] Updating lambdas with 800 new values
+[2026-02-13T13:25:17Z INFO  arrowspace::core] Normalized lambdas to [0, 1] range (original spread: 0.059820)
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Update Time:      35.239µs                                ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Total Time:       23.567s                                 ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ║   Throughput:       34                                      items/sec ║
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T13:25:17Z INFO  arrowspace::taumode] ✓ Parallel taumode lambda computation completed successfully
+[2026-02-13T13:25:17Z INFO  arrowspace::eigenmaps] λ computation complete: min=0.000000, max=1.000000, mean=0.217739
+[2026-02-13T13:25:17Z INFO  arrowspace::builder] Total ArrowSpaceBuilder construction time: 48.338593908s
+[2026-02-13T13:25:17Z INFO  arrowspace::builder] ArrowSpace build completed successfully
+[2026-02-13T13:25:17Z INFO  wiring_comparative] ✓ Build complete in 48.84s
+[2026-02-13T13:25:17Z INFO  wiring_comparative] 
+    ┌─ LAMBDA STATISTICS ─────────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Mean:  0.217739
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Std:   0.138085
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ CV:    0.634176 (coefficient of variation)
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Min:   0.000000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Max:   1.000000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Range: 1.000000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ ┌─ SPECTRAL QUALITY METRICS ─────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Spectral Gap (λ₂ - λ₁):        0.005985
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Normalized Gap (gap/λ_max):    0.005985
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Fiedler Value (λ₁):            0.002622
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Algebraic Connectivity:        WEAK ⚠
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Effective Rank:                669.92
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ │ Participation Ratio:           570.54
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ └────────────────────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] 
+    ┌─ LAMBDA DISTRIBUTION BY CLASS ──────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Positive class (n=78): μ=0.224867, σ=0.110958
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Negative class (n=722): μ=0.216969, σ=0.140681
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Mean difference: 0.007898
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Cohen's d (effect size): 0.062 (NEGLIGIBLE effect)
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Distribution overlap: 0.641 (lower = better separability)
+[2026-02-13T13:25:17Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] 
+    ┌─ k-NN CLASSIFICATION (Lambda Distance) ─────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Train set: 640 samples
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ Test set:  160 samples
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k= 1 → Acc: 0.8063, Bal-Acc: 0.4448, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k= 3 → Acc: 0.8812, Bal-Acc: 0.4862, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T13:25:17Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] 
+    ┌─ COSINE-ONLY BASELINE ──────────────────────────────────────────
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │ (Pure semantic similarity, no spectral component)
+[2026-02-13T13:25:17Z INFO  wiring_comparative] │
+[2026-02-13T13:26:02Z INFO  wiring_comparative] │ k= 1 → Acc: 0.9375, Bal-Acc: 0.9057, F1: 0.7222 (45.54s)
+[2026-02-13T13:26:48Z INFO  wiring_comparative] │ k= 3 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.50s)
+[2026-02-13T13:27:33Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.51s)
+[2026-02-13T13:28:19Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.57s)
+[2026-02-13T13:29:04Z INFO  wiring_comparative] │ k=11 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.67s)
+[2026-02-13T13:29:51Z INFO  wiring_comparative] │ k=15 → Acc: 0.9688, Bal-Acc: 0.8931, F1: 0.8276 (46.12s)
+[2026-02-13T13:29:51Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T13:29:51Z INFO  wiring_comparative] 
+    ┌─ UMAP BASELINE (2D Embedding) ──────────────────────────────────
+[2026-02-13T13:29:51Z INFO  wiring_comparative] │ Reducing 100k features → 2D via UMAP (umap-rs 0.4.5)
+[2026-02-13T13:29:51Z INFO  wiring_comparative] │
+[2026-02-13T13:29:51Z INFO  wiring_comparative] │ Computing k-NN graph (n=800, k=15)...
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ Initializing random embedding...
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ Fitting UMAP...
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ UMAP fit time: 92.73s
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ UMAP embeddings: 100000D → 2D
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ Train: 640 samples, Test: 160 samples
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k= 1 → Acc: 0.8438, Bal-Acc: 0.4954, F1: 0.0741 (3.62ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k= 3 → Acc: 0.8938, Bal-Acc: 0.4931, F1: 0.0000 (3.37ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.38ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.38ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.38ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.35ms)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ ✓ Saved UMAP embeddings: "dorothea_umap_embeddings_gaussian_best.csv"
+[2026-02-13T13:31:23Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T13:31:23Z INFO  wiring_comparative] 
+    ┌─ LAMBDA-AWARE SEARCH (Alpha Parameter Sweep) ──────────────────
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │ Alpha controls semantic/spectral balance:
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │   α=1.0 → pure semantic (cosine)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │   α=0.5 → balanced
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │   α=0.0 → pure spectral (lambda proximity)
+[2026-02-13T13:31:23Z INFO  wiring_comparative] │
+[2026-02-13T13:31:23Z INFO  arrowspace::core] Lambda-aware search: k=5
+[2026-02-13T14:43:19Z INFO  wiring_comparative] │ α=1.0 → Acc: 0.9750, Bal-Acc: 0.9195, F1: 0.8125, 0.4 q/s
+[2026-02-13T14:43:19Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:43:19Z INFO  wiring_comparative] 
+    ═════════════════════════════════════════════════════════════════════
+[2026-02-13T14:43:19Z INFO  wiring_comparative] Configuration: tight_clusters
+[2026-02-13T14:43:19Z INFO  wiring_comparative]   JL ε=0.7, k=25, radius=2, λ_k=50
+[2026-02-13T14:43:19Z INFO  wiring_comparative] ═════════════════════════════════════════════════════════════════════
+[2026-02-13T14:43:19Z INFO  arrowspace::builder] Initializing new ArrowSpaceBuilder
+[2026-02-13T14:43:19Z INFO  arrowspace::builder] Configuring lambda graph: eps=0.7, k=25, p=2, sigma=Some(0.01)
+[2026-02-13T14:43:19Z INFO  arrowspace::builder] Setting manual cluster_max_clusters: 25
+[2026-02-13T14:43:19Z INFO  arrowspace::builder] Configuring synthesis with tau mode: Median
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] Setting custom clustering seed: 17120389925171899272
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] Building ArrowSpace from 800 items with 100000 features
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] High-dimensional data detected (F=100000), using fast reduce-then-cluster path
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] EigenMaps::start_clustering_fast: N=800 items, F=100000 features
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] Applying early JL projection to accelerate clustering
+[2026-02-13T14:43:20Z INFO  arrowspace::builder] Early projection: 100000 features → 220 dimensions (ε=0.70)
+[2026-02-13T14:43:43Z INFO  arrowspace::builder] Early projection complete: 454.5x compression, 610 MB → 1 MB
+[2026-02-13T14:43:45Z INFO  arrowspace::sampling] Simple random sampler with keep rate 100.0%
+[2026-02-13T14:43:45Z INFO  arrowspace::builder] Computing optimal clustering parameters
+[2026-02-13T14:43:45Z INFO  arrowspace::builder] Using manual override (no intrinsic dimensions): K=Some(25), radius=1.0000
+[2026-02-13T14:43:45Z INFO  arrowspace::builder] Running incremental clustering: max_clusters=25, radius=1.000000
+[2026-02-13T14:43:45Z INFO  arrowspace::clustering] Starting incremental clustering with inline sampling
+[2026-02-13T14:43:45Z INFO  arrowspace::builder] Clustering complete: 25 centroids, 25 items assigned
+[2026-02-13T14:43:45Z INFO  arrowspace::eigenmaps] EigenMaps::eigenmaps: Building Laplacian from 25 centroids × 220 features
+[2026-02-13T14:43:45Z INFO  arrowspace::graph] Building Laplacian matrix for K cluster: 25 clusters
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Building Laplacian matrix for 25 items with 220 features
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Building CosinePair data structure
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Computing degrees for inline sparsification
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Computing k-NN with CosinePair: k=11
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Converting adjacency to sparse Laplacian matrix (DashMap batched)
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Sparse Laplacian construction time: 167.768µs
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Total Laplacian construction time: 36.958021ms
+[2026-02-13T14:43:45Z INFO  arrowspace::laplacian] Successfully built sparse Laplacian matrix (220x220) with 484 non-zeros
+[2026-02-13T14:43:45Z INFO  arrowspace::graph] Laplacian matrix built: 220×220 with 800 nodes, 484 non-zeros
+[2026-02-13T14:43:45Z INFO  arrowspace::eigenmaps] Laplacian construction complete: 220×220 matrix, 484 non-zeros, 99.00% sparse
+[2026-02-13T14:43:45Z INFO  arrowspace::builder] Computing taumode lambdas with synthesis: Median
+[2026-02-13T14:43:45Z INFO  arrowspace::eigenmaps] EigenMaps::compute_taumode: Computing λ values for 800 items using Median
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║          Parallel TauMode Lambda Computation                ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║ Configuration:                                              ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Items:           800                                      ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Features:        100000                                   ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Threads:         6                                        ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   TauMode:         Median                                   ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Graph Source:    Laplacian Matrix                         ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Graph Shape:     220×220                                  ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Graph NNZ:       484                                      ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ║   Graph Sparsity:  0.990000                                 ║
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T14:43:45Z INFO  arrowspace::taumode] Starting parallel lambda computation...
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║          Computation Statistics                             ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Sequential Items: 0                                       ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Parallel Items:   0                                       ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Compute Time:     26.269s                                 ║
+[2026-02-13T14:44:11Z INFO  arrowspace::core] Updating lambdas with 800 new values
+[2026-02-13T14:44:11Z INFO  arrowspace::core] Normalized lambdas to [0, 1] range (original spread: 0.012993)
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Update Time:      32.738µs                                ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Total Time:       26.270s                                 ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ║   Throughput:       30                                      items/sec ║
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T14:44:11Z INFO  arrowspace::taumode] ✓ Parallel taumode lambda computation completed successfully
+[2026-02-13T14:44:11Z INFO  arrowspace::eigenmaps] λ computation complete: min=0.000000, max=1.000000, mean=0.281330
+[2026-02-13T14:44:11Z INFO  arrowspace::builder] Total ArrowSpaceBuilder construction time: 51.207508713s
+[2026-02-13T14:44:11Z INFO  arrowspace::builder] ArrowSpace build completed successfully
+[2026-02-13T14:44:11Z INFO  wiring_comparative] ✓ Build complete in 51.73s
+[2026-02-13T14:44:11Z INFO  wiring_comparative] 
+    ┌─ LAMBDA STATISTICS ─────────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Mean:  0.281330
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Std:   0.136233
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ CV:    0.484245 (coefficient of variation)
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Min:   0.000000
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Max:   1.000000
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Range: 1.000000
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ ┌─ SPECTRAL QUALITY METRICS ─────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Spectral Gap (λ₂ - λ₁):        0.019474
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Normalized Gap (gap/λ_max):    0.019474
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Fiedler Value (λ₁):            0.000763
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Algebraic Connectivity:        WEAK ⚠
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Effective Rank:                717.11
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ │ Participation Ratio:           648.04
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ └────────────────────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] 
+    ┌─ LAMBDA DISTRIBUTION BY CLASS ──────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Positive class (n=78): μ=0.251390, σ=0.101384
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Negative class (n=722): μ=0.284565, σ=0.139092
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Mean difference: 0.033174
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Cohen's d (effect size): 0.273 (SMALL effect)
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Distribution overlap: 0.497 (lower = better separability)
+[2026-02-13T14:44:11Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] 
+    ┌─ k-NN CLASSIFICATION (Lambda Distance) ─────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Train set: 640 samples
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ Test set:  160 samples
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k= 1 → Acc: 0.8125, Bal-Acc: 0.5678, Prec: 0.1739, Rec: 0.2667, F1: 0.2105
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k= 3 → Acc: 0.8750, Bal-Acc: 0.5126, Prec: 0.1429, Rec: 0.0667, F1: 0.0909
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k= 5 → Acc: 0.8812, Bal-Acc: 0.5161, Prec: 0.1667, Rec: 0.0667, F1: 0.0952
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9000, Bal-Acc: 0.5264, Prec: 0.3333, Rec: 0.0667, F1: 0.1111
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T14:44:11Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] 
+    ┌─ COSINE-ONLY BASELINE ──────────────────────────────────────────
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │ (Pure semantic similarity, no spectral component)
+[2026-02-13T14:44:11Z INFO  wiring_comparative] │
+[2026-02-13T14:44:57Z INFO  wiring_comparative] │ k= 1 → Acc: 0.9375, Bal-Acc: 0.9057, F1: 0.7222 (46.17s)
+[2026-02-13T14:45:43Z INFO  wiring_comparative] │ k= 3 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.74s)
+[2026-02-13T14:46:29Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.78s)
+[2026-02-13T14:47:15Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (46.29s)
+[2026-02-13T14:48:01Z INFO  wiring_comparative] │ k=11 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.74s)
+[2026-02-13T14:48:46Z INFO  wiring_comparative] │ k=15 → Acc: 0.9688, Bal-Acc: 0.8931, F1: 0.8276 (45.72s)
+[2026-02-13T14:48:46Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:48:46Z INFO  wiring_comparative] 
+    ┌─ UMAP BASELINE (2D Embedding) ──────────────────────────────────
+[2026-02-13T14:48:46Z INFO  wiring_comparative] │ Reducing 100k features → 2D via UMAP (umap-rs 0.4.5)
+[2026-02-13T14:48:46Z INFO  wiring_comparative] │
+[2026-02-13T14:48:47Z INFO  wiring_comparative] │ Computing k-NN graph (n=800, k=15)...
+[2026-02-13T14:50:18Z INFO  wiring_comparative] │ Initializing random embedding...
+[2026-02-13T14:50:18Z INFO  wiring_comparative] │ Fitting UMAP...
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ UMAP fit time: 92.13s
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ UMAP embeddings: 100000D → 2D
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ Train: 640 samples, Test: 160 samples
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k= 1 → Acc: 0.8250, Bal-Acc: 0.5149, F1: 0.1250 (3.46ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k= 3 → Acc: 0.8812, Bal-Acc: 0.5161, F1: 0.0952 (3.37ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9062, Bal-Acc: 0.5299, F1: 0.1176 (3.32ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.33ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.34ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.34ms)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ ✓ Saved UMAP embeddings: "dorothea_umap_embeddings_tight_clusters.csv"
+[2026-02-13T14:50:19Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T14:50:19Z INFO  wiring_comparative] 
+    ┌─ LAMBDA-AWARE SEARCH (Alpha Parameter Sweep) ──────────────────
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │ Alpha controls semantic/spectral balance:
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │   α=1.0 → pure semantic (cosine)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │   α=0.5 → balanced
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │   α=0.0 → pure spectral (lambda proximity)
+[2026-02-13T14:50:19Z INFO  wiring_comparative] │
+[2026-02-13T16:01:06Z INFO  wiring_comparative] │ α=1.0 → Acc: 0.9688, Bal-Acc: 0.9195, F1: 0.8125, 0.4 q/s
+[2026-02-13T16:01:06Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:01:06Z INFO  wiring_comparative] 
+    ═════════════════════════════════════════════════════════════════════
+[2026-02-13T16:01:06Z INFO  wiring_comparative] Configuration: high_compression
+[2026-02-13T16:01:06Z INFO  wiring_comparative]   JL ε=0.5, k=50, radius=2.5, λ_k=50
+[2026-02-13T16:01:06Z INFO  wiring_comparative] ═════════════════════════════════════════════════════════════════════
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Initializing new ArrowSpaceBuilder
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Configuring lambda graph: eps=0.5, k=50, p=2.5, sigma=Some(0.01)
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Setting manual cluster_max_clusters: 50
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Configuring synthesis with tau mode: Median
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Setting custom clustering seed: 2640839707344698485
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] Building ArrowSpace from 800 items with 100000 features
+[2026-02-13T16:01:06Z INFO  arrowspace::builder] High-dimensional data detected (F=100000), using fast reduce-then-cluster path
+[2026-02-13T16:01:07Z INFO  arrowspace::builder] EigenMaps::start_clustering_fast: N=800 items, F=100000 features
+[2026-02-13T16:01:07Z INFO  arrowspace::builder] Applying early JL projection to accelerate clustering
+[2026-02-13T16:01:07Z INFO  arrowspace::builder] Early projection: 100000 features → 428 dimensions (ε=0.50)
+[2026-02-13T16:01:51Z INFO  arrowspace::builder] Early projection complete: 233.6x compression, 610 MB → 2 MB
+[2026-02-13T16:01:52Z INFO  arrowspace::sampling] Simple random sampler with keep rate 100.0%
+[2026-02-13T16:01:52Z INFO  arrowspace::builder] Computing optimal clustering parameters
+[2026-02-13T16:01:52Z INFO  arrowspace::builder] Using manual override (no intrinsic dimensions): K=Some(50), radius=1.0000
+[2026-02-13T16:01:52Z INFO  arrowspace::builder] Running incremental clustering: max_clusters=50, radius=1.000000
+[2026-02-13T16:01:52Z INFO  arrowspace::clustering] Starting incremental clustering with inline sampling
+[2026-02-13T16:01:52Z INFO  arrowspace::builder] Clustering complete: 50 centroids, 50 items assigned
+[2026-02-13T16:01:52Z INFO  arrowspace::eigenmaps] EigenMaps::eigenmaps: Building Laplacian from 50 centroids × 428 features
+[2026-02-13T16:01:52Z INFO  arrowspace::graph] Building Laplacian matrix for K cluster: 50 clusters
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Building Laplacian matrix for 50 items with 428 features
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Building CosinePair data structure
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Computing degrees for inline sparsification
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Computing k-NN with CosinePair: k=11
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Converting adjacency to sparse Laplacian matrix (DashMap batched)
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Sparse Laplacian construction time: 176.625µs
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Total Laplacian construction time: 213.222526ms
+[2026-02-13T16:01:52Z INFO  arrowspace::laplacian] Successfully built sparse Laplacian matrix (428x428) with 428 non-zeros
+[2026-02-13T16:01:52Z INFO  arrowspace::graph] Laplacian matrix built: 428×428 with 800 nodes, 428 non-zeros
+[2026-02-13T16:01:52Z INFO  arrowspace::eigenmaps] Laplacian construction complete: 428×428 matrix, 428 non-zeros, 99.77% sparse
+[2026-02-13T16:01:52Z INFO  arrowspace::builder] Computing taumode lambdas with synthesis: Median
+[2026-02-13T16:01:52Z INFO  arrowspace::eigenmaps] EigenMaps::compute_taumode: Computing λ values for 800 items using Median
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║          Parallel TauMode Lambda Computation                ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║ Configuration:                                              ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Items:           800                                      ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Features:        100000                                   ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Threads:         6                                        ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   TauMode:         Median                                   ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Graph Source:    Laplacian Matrix                         ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Graph Shape:     428×428                                  ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Graph NNZ:       428                                      ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ║   Graph Sparsity:  0.997664                                 ║
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T16:01:52Z INFO  arrowspace::taumode] Starting parallel lambda computation...
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ╔═════════════════════════════════════════════════════════════╗
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║          Computation Statistics                             ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ╠═════════════════════════════════════════════════════════════╣
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Sequential Items: 0                                       ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Parallel Items:   0                                       ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Compute Time:     44.819s                                 ║
+[2026-02-13T16:02:37Z INFO  arrowspace::core] Updating lambdas with 800 new values
+[2026-02-13T16:02:37Z INFO  arrowspace::core] Normalized lambdas to [0, 1] range (original spread: 0.000000)
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Update Time:      33.202µs                                ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Total Time:       44.820s                                 ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ║   Throughput:       18                                      items/sec ║
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ╚═════════════════════════════════════════════════════════════╝
+[2026-02-13T16:02:37Z INFO  arrowspace::taumode] ✓ Parallel taumode lambda computation completed successfully
+[2026-02-13T16:02:37Z INFO  arrowspace::eigenmaps] λ computation complete: min=0.000000, max=0.000000, mean=0.000000
+[2026-02-13T16:02:37Z INFO  arrowspace::builder] Total ArrowSpaceBuilder construction time: 90.649473352s
+[2026-02-13T16:02:37Z INFO  arrowspace::builder] ArrowSpace build completed successfully
+[2026-02-13T16:02:37Z INFO  wiring_comparative] ✓ Build complete in 91.13s
+[2026-02-13T16:02:37Z INFO  wiring_comparative] 
+    ┌─ LAMBDA STATISTICS ─────────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Mean:  0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Std:   0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ CV:    0.000000 (coefficient of variation)
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Min:   0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Max:   0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Range: 0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ ┌─ SPECTRAL QUALITY METRICS ─────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Spectral Gap (λ₂ - λ₁):        0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Normalized Gap (gap/λ_max):    0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Fiedler Value (λ₁):            0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Algebraic Connectivity:        WEAK ⚠
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Effective Rank:                0.00
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ │ Participation Ratio:           0.00
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ └────────────────────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] 
+    ┌─ LAMBDA DISTRIBUTION BY CLASS ──────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Positive class (n=78): μ=0.000000, σ=0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Negative class (n=722): μ=0.000000, σ=0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Mean difference: 0.000000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Cohen's d (effect size): NaN (NEGLIGIBLE effect)
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Distribution overlap: 0.000 (lower = better separability)
+[2026-02-13T16:02:37Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] 
+    ┌─ k-NN CLASSIFICATION (Lambda Distance) ─────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Train set: 640 samples
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ Test set:  160 samples
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k= 1 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k= 3 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, Prec: 0.0000, Rec: 0.0000, F1: 0.0000
+[2026-02-13T16:02:37Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] 
+    ┌─ COSINE-ONLY BASELINE ──────────────────────────────────────────
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │ (Pure semantic similarity, no spectral component)
+[2026-02-13T16:02:37Z INFO  wiring_comparative] │
+[2026-02-13T16:03:23Z INFO  wiring_comparative] │ k= 1 → Acc: 0.9375, Bal-Acc: 0.9057, F1: 0.7222 (45.58s)
+[2026-02-13T16:04:08Z INFO  wiring_comparative] │ k= 3 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.60s)
+[2026-02-13T16:04:54Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.56s)
+[2026-02-13T16:05:39Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.57s)
+[2026-02-13T16:06:25Z INFO  wiring_comparative] │ k=11 → Acc: 0.9750, Bal-Acc: 0.9264, F1: 0.8667 (45.54s)
+[2026-02-13T16:07:10Z INFO  wiring_comparative] │ k=15 → Acc: 0.9688, Bal-Acc: 0.8931, F1: 0.8276 (45.62s)
+[2026-02-13T16:07:10Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:07:10Z INFO  wiring_comparative] 
+    ┌─ UMAP BASELINE (2D Embedding) ──────────────────────────────────
+[2026-02-13T16:07:10Z INFO  wiring_comparative] │ Reducing 100k features → 2D via UMAP (umap-rs 0.4.5)
+[2026-02-13T16:07:10Z INFO  wiring_comparative] │
+[2026-02-13T16:07:11Z INFO  wiring_comparative] │ Computing k-NN graph (n=800, k=15)...
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ Initializing random embedding...
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ Fitting UMAP...
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ UMAP fit time: 92.01s
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ UMAP embeddings: 100000D → 2D
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ Train: 640 samples, Test: 160 samples
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k= 1 → Acc: 0.8562, Bal-Acc: 0.5322, F1: 0.1481 (3.41ms)
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k= 3 → Acc: 0.8750, Bal-Acc: 0.4828, F1: 0.0000 (3.32ms)
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k= 5 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.31ms)
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k= 7 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.34ms)
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k=11 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.32ms)
+[2026-02-13T16:08:42Z INFO  wiring_comparative] │ k=15 → Acc: 0.9062, Bal-Acc: 0.5000, F1: 0.0000 (3.34ms)
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │ ✓ Saved UMAP embeddings: "dorothea_umap_embeddings_high_compression.csv"
+[2026-02-13T16:08:43Z INFO  wiring_comparative] └─────────────────────────────────────────────────────────────────────
+[2026-02-13T16:08:43Z INFO  wiring_comparative] 
+    ┌─ LAMBDA-AWARE SEARCH (Alpha Parameter Sweep) ──────────────────
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │ Alpha controls semantic/spectral balance:
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │   α=1.0 → pure semantic (cosine)
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │   α=0.5 → balanced
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │   α=0.0 → pure spectral (lambda proximity)
+[2026-02-13T16:08:43Z INFO  wiring_comparative] │
+
+thread 'main' (2504) panicked at /home/tudor/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrowspace-0.25.14/src/core.rs:926:17:
+Check your eps parameter for the builder, every dataset has an optimal eps. 
+ Also, the query item may be out of context for the dataset (undecidable), despite all safeguards its lambda is 0.0
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+   1: core::panicking::panic_fmt
+   2: arrowspace::core::ArrowSpace::prepare_query_item
+   3: wiring_comparative::main
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
